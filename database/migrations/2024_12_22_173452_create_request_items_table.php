@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('request_id')->constrained('requests')->onDelete('cascade'); // Relación con requests
             $table->foreignId('unit_id')->constrained('product_units')->onDelete('cascade'); // Relación con product_units
-            $table->integer('cantidad');
             $table->timestamps();
         });
     }
