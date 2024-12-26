@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Usuario que realiza la solicitud
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade'); // Producto solicitado
+            $table->foreignId('user_id')->constrained('users')->onUpdate('cascade')->onDelete('cascade'); // Usuario que realiza la solicitud
+            $table->foreignId('product_id')->constrained('products')->onUpdate('cascade')->onDelete('cascade'); // Producto solicitado
             $table->integer('cantidad_solicitada'); // Cantidad solicitada
-            $table->enum('estado', ['pendiente', 'aceptado', 'rechazado'])->default('pendiente');
+            $table->enum('estado', ['pendiente', 'aceptado', 'rechazado', 'completado'])->default('pendiente');
             $table->text('motivo_rechazo')->nullable(); // Motivo del rechazo (si aplica)
             $table->timestamps(); // created_at y updated_at
         });
