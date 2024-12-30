@@ -10,6 +10,7 @@ class ProductUnit extends Model
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
+    test
 
     public function requestProductUnits()
     {
