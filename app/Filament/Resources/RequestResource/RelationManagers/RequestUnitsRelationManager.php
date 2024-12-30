@@ -12,14 +12,14 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class RequestUnitsRelationManager extends RelationManager
 {
-    protected static string $relationship = 'requestUnits';
+    protected static string $relationship = 'requestProductUnits';
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('unit_id')
-                    ->relationship('unit', 'codigo_inventario')
+                    ->relationship('productUnit', 'codigo_inventario')
                     ->required(),
             ]);
     }
@@ -29,16 +29,25 @@ class RequestUnitsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('unit_id')
             ->columns([
-                Tables\Columns\TextColumn::make('unit.product.nombre')
+                Tables\Columns\TextColumn::make('productUnit.product.nombre')
                     ->label('Nombre'),
-                Tables\Columns\TextColumn::make('unit.product.marca')
+                Tables\Columns\TextColumn::make('productUnit.product.marca')
                     ->label('Marca'),
-                Tables\Columns\TextColumn::make('unit.product.modelo')
+                Tables\Columns\TextColumn::make('productUnit.product.modelo')
                     ->label('Modelo'),
-                Tables\Columns\TextColumn::make('unit.codigo_inventario')
+                Tables\Columns\TextColumn::make('productUnit.codigo_inventario')
                     ->label('Codigo de Inventario'),
-                Tables\Columns\TextColumn::make('unit.serie')
+                Tables\Columns\TextColumn::make('productUnit.serie')
                     ->label('Serie'),
+                Tables\Columns\TextColumn::make('productUnit.estado')
+                    ->label('Estado')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'prestado' => 'warning',
+                        'dañado' => 'danger',
+                        'disponible' => 'success',
+                        'reservado' => 'info',
+                    }),
             ])
             ->filters([
                 //

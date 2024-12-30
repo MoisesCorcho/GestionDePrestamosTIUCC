@@ -11,8 +11,8 @@ class ProductUnit extends Model
         return $this->belongsTo(Product::class, 'product_id');
     }
 
-    public function requestUnits()
+    public function requestProductUnits()
     {
-        return $this->hasMany(RequestItem::class, 'unit_id');
+        return $this->hasMany(RequestProductUnit::class, 'product_unit_id');
     }
 }

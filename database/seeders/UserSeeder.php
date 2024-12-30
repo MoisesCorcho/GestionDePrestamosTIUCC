@@ -17,15 +17,15 @@ class UserSeeder extends Seeder
     {
         $users = [
             [
-                'name' => 'Juan Perez',
+                'name' => 'Elkin Perez',
                 'email' => 'juan.perez@ucc.edu.co',
                 'password' => bcrypt('password'),
                 'role' => 'AUXILIAR',
                 'department' => 'OFICINA DE INFRAESTRUCTURA TECNOLÓGICA',
             ],
             [
-                'name' => 'Maria Gomez',
-                'email' => 'maria.gomez@ucc.edu.co',
+                'name' => 'Moises Corcho Perez',
+                'email' => 'moises.corcho@campusucc.edu.co',
                 'password' => bcrypt('password'),
                 'role' => 'ESTUDIANTE',
                 'department' => 'PROGRAMA DE INGENIERÍA DE SISTEMAS',
