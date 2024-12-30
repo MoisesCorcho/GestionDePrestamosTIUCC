@@ -39,27 +39,21 @@ class RequestResource extends Resource
                 Forms\Components\Select::make('user_id')
                     ->relationship('user', 'name')
                     ->required(),
-
-                Forms\Components\Select::make('product_id')
-                    ->relationship('product', 'nombre')
-                    ->live()
-                    ->afterStateUpdated(function (Set $set, Get $get) {
-
-                        $cantidadDisponible = ProductUnit::query()
-                            ->where('product_id', $get('product_id'))
-                            ->where('estado', 'disponible')
-                            ->count();
-
-                        $set('cantidad_disponible', $cantidadDisponible);
-                    })
-                    ->required(),
-
+                    Repeater::make('requestProductUnits')
+    ->label('Productos')
+    ->relationship('requestProductUnits')
+    ->schema([
+        Forms\Components\Select::make('product_unit_id')
+            ->relationship('productUnit', 'id')
+            ->required(),
+    ]),
+               
                 Forms\Components\TextInput::make('cantidad_solicitada')
                     ->required() // Valida que el campo sea obligatorio
                     ->minValue(1) // No puede bajar de 0
-                    ->maxValue(fn(Get $get) => $get('cantidad_disponible') ?? 0) // Máximo igual a la cantidad disponible
-                    ->numeric()
-                    ->live()
+                   // ->maxValue(fn(Get $get) => $get('cantidad_disponible') ?? 0) // Máximo igual a la cantidad disponible
+                    ->numeric(), /*
+                    ->live(),
                     ->afterStateUpdated(function (Set $set, Get $get, $state) {
                         $cantidadDisponible = $get('cantidad_disponible') ?? 0;
 
@@ -70,10 +64,11 @@ class RequestResource extends Resource
                                 ->warning()
                                 ->send();
                         }
-                    }),
+                    }),*/
 
                 Forms\Components\TextInput::make('cantidad_disponible')
                     ->live()
+                    /*
                     ->afterStateHydrated(function (Set $set, Get $get) {
                         $productId = $get('product_id'); // Obtén el producto seleccionado
                         if ($productId) {
@@ -86,9 +81,9 @@ class RequestResource extends Resource
                             // Establece el estado del campo
                             $set('cantidad_disponible', $cantidadDisponible);
                         }
-                    })
+                    })*/
                     ->label('Cantidad Disponible')
-                    ->disabled()
+                  ->disabled()
                     ->numeric(),
 
                 Forms\Components\Select::make('estado')
