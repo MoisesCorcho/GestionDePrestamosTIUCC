@@ -36,6 +36,7 @@ class UnitsRelationManager extends RelationManager
                         'disponible' => 'Disponible',
                         'prestado' => 'Prestado',
                         'dañado' => 'Dañado',
+                        'reservado' => 'Reservado'
                     ])
                     ->default('disponible'),
 
@@ -77,6 +78,7 @@ class UnitsRelationManager extends RelationManager
                         'prestado' => 'warning',
                         'dañado' => 'danger',
                         'disponible' => 'success',
+                        'reservado' => 'info',
                     }),
                 Tables\Columns\TextColumn::make('descripcion_lugar')
                     ->searchable(),
@@ -93,7 +95,8 @@ class UnitsRelationManager extends RelationManager
                     ->options([
                         'prestado' => 'Prestado',
                         'dañado' => 'Dañado',
-                        'disponible' => 'Disponible'
+                        'disponible' => 'Disponible',
+                        'reservado' => 'Reservado',
                     ])
             ])
             ->headerActions([

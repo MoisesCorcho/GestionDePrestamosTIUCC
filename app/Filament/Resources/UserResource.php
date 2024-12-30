@@ -24,6 +24,7 @@ class UserResource extends Resource
     protected static ?string $model = User::class;
     protected static ?string $navigationGroup = 'Users Management';
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationLabel = 'Usuarios';
 
     public static function form(Form $form): Form
     {
@@ -46,6 +47,20 @@ class UserResource extends Resource
                             ->required(),
                     ])
                     ->columns(3),
+
+                Section::make('Additional Info')
+                    ->schema([
+                        Forms\Components\Select::make('role_id')
+                            ->relationship(name: 'role', titleAttribute: 'nombre')
+                            ->label('Rol')
+                            ->required(),
+
+                        Forms\Components\Select::make('department_id')
+                            ->relationship(name: 'department', titleAttribute: 'nombre')
+                            ->label('Area')
+                            ->required(),
+                    ])
+                    ->columns(2),
 
                 Section::make('Address Info')
                     ->schema([
@@ -112,14 +127,15 @@ class UserResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('address')
+                Tables\Columns\TextColumn::make('role.nombre')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('department.nombre')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('address')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('postal_code')
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: false),
-                Tables\Columns\TextColumn::make('email_verified_at')
-                    ->dateTime()
-                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

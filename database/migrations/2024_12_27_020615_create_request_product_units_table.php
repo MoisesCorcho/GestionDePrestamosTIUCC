@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('request_items', function (Blueprint $table) {
+        Schema::create('request_product_units', function (Blueprint $table) {
             $table->id();
             $table->foreignId('request_id')->constrained('requests')->onDelete('cascade'); // Relación con requests
-            $table->foreignId('unit_id')->constrained('product_units')->onDelete('cascade'); // Relación con product_units
-            $table->timestamps();
+            $table->foreignId('product_unit_id')->constrained('product_units')->onDelete('cascade'); // Relación con product_units
+            $table->timestamps(); // Para created_at y updated_at
         });
     }
 
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('request_items');
+        Schema::dropIfExists('request_product_units');
     }
 };

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Personal\Resources;
 
 use Filament\Forms;
 use Filament\Tables;
@@ -11,21 +11,14 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\ProductUnit;
 use Filament\Resources\Resource;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
-use Filament\Infolists\Components\TextEntry;
-use App\Filament\Resources\RequestResource\Pages;
-use Filament\Infolists\Components\RepeatableEntry;
-use App\Filament\Resources\RequestResource\RelationManagers;
+use App\Filament\Personal\Resources\RequestResource\Pages;
 
 class RequestResource extends Resource
 {
     protected static ?string $model = Request::class;
-    protected static ?string $navigationLabel = 'Peticiones';
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document';
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function getEloquentQuery(): Builder
     {
@@ -36,9 +29,7 @@ class RequestResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('user_id')
-                    ->relationship('user', 'name')
-                    ->required(),
+
 
                 Forms\Components\Select::make('product_id')
                     ->relationship('product', 'nombre')
@@ -73,7 +64,6 @@ class RequestResource extends Resource
                     }),
 
                 Forms\Components\TextInput::make('cantidad_disponible')
-                    ->live()
                     ->afterStateHydrated(function (Set $set, Get $get) {
                         $productId = $get('product_id'); // Obtén el producto seleccionado
                         if ($productId) {
@@ -91,21 +81,11 @@ class RequestResource extends Resource
                     ->disabled()
                     ->numeric(),
 
-                Forms\Components\Select::make('estado')
-                    ->live()
-                    ->options([
-                        'pendiente' => 'Pendiente',
-                        'aceptado' => 'Aceptado',
-                        'rechazado' => 'Rechazado',
-                        'completado' => 'Completado',
-                    ])
-                    ->required(),
-
                 Forms\Components\Textarea::make('motivo_rechazo')
                     ->visible(function (Get $get) {
                         return $get('estado') == 'rechazado';
                     })
-                    ->requiredIf('estado', 'rechazado')
+                    ->disabled()
                     ->columnSpanFull(),
             ]);
     }
@@ -145,6 +125,9 @@ class RequestResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
+                    ->disabled(function ($record) {
+                        return !($record->estado == 'pendiente');
+                    })
                     ->before(function ($record) {
 
                         // Obtén los product_unit_id antes de que se elimine el registro
@@ -168,7 +151,7 @@ class RequestResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -176,7 +159,7 @@ class RequestResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\RequestUnitsRelationManager::class,
+            //
         ];
     }
 

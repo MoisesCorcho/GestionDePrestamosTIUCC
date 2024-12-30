@@ -3,7 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Observers\RequestObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 
+#[ObservedBy([RequestObserver::class])]
 class Request extends Model
 {
     public function user()
@@ -16,8 +19,8 @@ class Request extends Model
         return $this->belongsTo(Product::class, 'product_id');
     }
 
-    public function requestUnits()
+    public function requestProductUnits()
     {
-        return $this->hasMany(RequestItem::class, 'request_id');
+        return $this->hasMany(RequestProductUnit::class, 'request_id');
     }
 }

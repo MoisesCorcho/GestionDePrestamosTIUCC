@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ProductResource\Pages;
-use App\Filament\Resources\ProductResource\RelationManagers;
-use App\Models\Product;
+use App\Filament\Resources\RoleResource\Pages;
+use App\Filament\Resources\RoleResource\RelationManagers;
+use App\Models\Role;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,11 +13,13 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class ProductResource extends Resource
+class RoleResource extends Resource
 {
-    protected static ?string $model = Product::class;
-    protected static ?string $navigationLabel = 'Productos';
-    protected static ?string $navigationIcon = 'heroicon-o-archive-box';
+    protected static ?string $model = Role::class;
+    protected static ?string $navigationGroup = 'Users Management';
+    protected static ?int $navigationSort = 8;
+    protected static ?string $navigationIcon = 'heroicon-o-key';
+    protected static ?string $navigationLabel = 'Rol/Cargo';
 
     public static function form(Form $form): Form
     {
@@ -26,14 +28,6 @@ class ProductResource extends Resource
                 Forms\Components\TextInput::make('nombre')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\Textarea::make('descripcion')
-                    ->columnSpanFull(),
-                Forms\Components\TextInput::make('marca')
-                    ->maxLength(255)
-                    ->default(null),
-                Forms\Components\TextInput::make('modelo')
-                    ->maxLength(255)
-                    ->default(null),
             ]);
     }
 
@@ -43,13 +37,6 @@ class ProductResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('nombre')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('marca')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('modelo')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('cantidad')
-                    ->numeric()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -75,16 +62,16 @@ class ProductResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\UnitsRelationManager::class,
+            //
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListProducts::route('/'),
-            'create' => Pages\CreateProduct::route('/create'),
-            'edit' => Pages\EditProduct::route('/{record}/edit'),
+            'index' => Pages\ListRoles::route('/'),
+            'create' => Pages\CreateRole::route('/create'),
+            'edit' => Pages\EditRole::route('/{record}/edit'),
         ];
     }
 }
