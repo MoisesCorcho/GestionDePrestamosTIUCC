@@ -13,26 +13,19 @@ class CreateRequest extends CreateRecord
 {
     protected static string $resource = RequestResource::class;
 
+    protected function beforeCreate(): void
+    {
+        // dd($this->data);
+    }
+
     protected function afterCreate(): void
     {
-        $cantidadSolicitada = $this->record->cantidad_solicitada;
+        $requestedProductsId = $this->data['selected_products'];
 
-        $productosDisponibles = ProductUnit::query()
-            ->where('product_id', $this->record['product_id'])
-            ->where('estado', 'disponible')
-            ->take($cantidadSolicitada) // Limitar cierta cantidad de registros
-            ->get();
-
-        foreach ($productosDisponibles as $productoItem) {
-
-            $productoItem->update([
+        ProductUnit::query()
+            ->whereIn('id', $requestedProductsId)
+            ->update([
                 'estado' => 'reservado'
             ]);
-
-            RequestProductUnit::create([
-                'request_id' => $this->record->id,
-                'product_unit_id' => $productoItem->id,
-            ]);
-        }
     }
 }

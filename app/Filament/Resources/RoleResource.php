@@ -16,10 +16,22 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class RoleResource extends Resource
 {
     protected static ?string $model = Role::class;
-    protected static ?string $navigationGroup = 'Users Management';
+    protected static ?string $navigationGroup = 'Gestión de usuarios';
     protected static ?int $navigationSort = 8;
     protected static ?string $navigationIcon = 'heroicon-o-key';
-    protected static ?string $navigationLabel = 'Rol/Cargo';
+    // protected static ?string $navigationLabel = 'Rol/Cargo';
+
+    // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
+    public static function getModelLabel(): string
+    {
+        return __('Role');
+    }
+
+    // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
+    public static function getPluralModelLabel(): string
+    {
+        return __('Roles');
+    }
 
     public static function form(Form $form): Form
     {

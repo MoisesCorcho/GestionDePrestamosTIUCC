@@ -16,8 +16,20 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
-    protected static ?string $navigationLabel = 'Productos';
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
+    // protected static ?string $navigationLabel = 'Productos';
+
+    // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
+    public static function getModelLabel(): string
+    {
+        return __('Product');
+    }
+
+    // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
+    public static function getPluralModelLabel(): string
+    {
+        return __('Products');
+    }
 
     public static function form(Form $form): Form
     {

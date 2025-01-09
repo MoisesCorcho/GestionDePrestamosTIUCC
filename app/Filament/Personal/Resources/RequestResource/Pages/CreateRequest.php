@@ -21,6 +21,11 @@ class CreateRequest extends CreateRecord
         return $data;
     }
 
+    protected function beforeCreate()
+    {
+        // return dd($this->data);
+    }
+
     protected function afterCreate(): void
     {
         $cantidadSolicitada = $this->record->cantidad_solicitada;

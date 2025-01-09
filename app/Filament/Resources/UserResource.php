@@ -22,9 +22,21 @@ use App\Filament\Resources\UserResource\RelationManagers;
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
-    protected static ?string $navigationGroup = 'Users Management';
+    protected static ?string $navigationGroup = 'Gestión de usuarios';
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
-    protected static ?string $navigationLabel = 'Usuarios';
+    // protected static ?string $navigationLabel = 'Usuarios';
+
+    // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
+    public static function getModelLabel(): string
+    {
+        return __('User');
+    }
+
+    // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
+    public static function getPluralModelLabel(): string
+    {
+        return __('Users');
+    }
 
     public static function form(Form $form): Form
     {

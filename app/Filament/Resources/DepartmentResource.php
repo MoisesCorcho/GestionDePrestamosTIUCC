@@ -16,10 +16,22 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class DepartmentResource extends Resource
 {
     protected static ?string $model = Department::class;
-    protected static ?string $navigationGroup = 'Users Management';
+    protected static ?string $navigationGroup = 'Gestión de usuarios';
     protected static ?int $navigationSort = 8;
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
-    protected static ?string $navigationLabel = 'Areas';
+    // protected static ?string $navigationLabel = 'Areas';
+
+    // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
+    public static function getModelLabel(): string
+    {
+        return __('City');
+    }
+
+    // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
+    public static function getPluralModelLabel(): string
+    {
+        return __('Cities');
+    }
 
     public static function form(Form $form): Form
     {
