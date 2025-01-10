@@ -24,13 +24,13 @@ class DepartmentResource extends Resource
     // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
     public static function getModelLabel(): string
     {
-        return __('City');
+        return __('Department');
     }
 
     // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
     public static function getPluralModelLabel(): string
     {
-        return __('Cities');
+        return __('Departments');
     }
 
     public static function form(Form $form): Form

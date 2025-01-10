@@ -2,19 +2,18 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
+use App\Models\Position;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
-class RoleSeeder extends Seeder
+class PositionSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        // Roles
-        $roles = [
+        $positions = [
             'ANALISTA',
             'APRENDIZ',
             'AUXILIAR',
@@ -28,12 +27,11 @@ class RoleSeeder extends Seeder
             'PROFESOR CATEDRATICO ADMINISTRATIVO',
             'PROFESOR MEDIO TIEMPO',
             'PROFESOR TIEMPO COMPLETO',
-            'SUBDIRECTOR',
-            'ADMINISTRADOR'
+            'SUBDIRECTOR'
         ];
 
-        foreach ($roles as $role) {
-            Role::create(['nombre' => $role]);
+        foreach ($positions as $position) {
+            Position::create(['nombre' => $position]);
         }
     }
 }

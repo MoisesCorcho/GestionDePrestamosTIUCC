@@ -62,15 +62,21 @@ class UserResource extends Resource
 
                 Section::make('Additional Info')
                     ->schema([
-                        Forms\Components\Select::make('role_id')
-                            ->relationship(name: 'role', titleAttribute: 'nombre')
-                            ->label('Rol')
+                        Forms\Components\Select::make('position_id')
+                            ->relationship(name: 'position', titleAttribute: 'nombre')
+                            ->label('Position')
                             ->required(),
 
                         Forms\Components\Select::make('department_id')
                             ->relationship(name: 'department', titleAttribute: 'nombre')
                             ->label('Area')
                             ->required(),
+
+                        Forms\Components\Select::make('roles')
+                            ->relationship('roles', 'name')
+                            ->multiple()
+                            ->preload()
+                            ->searchable(),
                     ])
                     ->columns(2),
 
@@ -139,7 +145,7 @@ class UserResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('role.nombre')
+                Tables\Columns\TextColumn::make('position.nombre')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('department.nombre')
                     ->searchable(),

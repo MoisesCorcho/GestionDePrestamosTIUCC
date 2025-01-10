@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
+use App\Models\Position;
 use App\Models\User;
 use App\Models\Department;
 use Illuminate\Database\Seeder;
@@ -17,30 +17,30 @@ class UserSeeder extends Seeder
     {
         $users = [
             [
-                'name' => 'Elkin Perez',
+                'name' => 'Juan Perez',
                 'email' => 'juan.perez@ucc.edu.co',
                 'password' => bcrypt('password'),
-                'role' => 'AUXILIAR',
+                'position' => 'AUXILIAR',
                 'department' => 'OFICINA DE INFRAESTRUCTURA TECNOLÓGICA',
             ],
             [
-                'name' => 'Moises Corcho Perez',
+                'name' => 'Moises Estudiante',
                 'email' => 'moises.corcho@campusucc.edu.co',
                 'password' => bcrypt('password'),
-                'role' => 'ESTUDIANTE',
+                'position' => 'ESTUDIANTE',
                 'department' => 'PROGRAMA DE INGENIERÍA DE SISTEMAS',
             ],
         ];
 
         foreach ($users as $user) {
-            $roleId = Role::where('nombre', $user['role'])->first()->id;
+            $positionId = Position::where('nombre', $user['position'])->first()->id;
             $departmentId = Department::where('nombre', $user['department'])->first()->id;
 
             User::create([
                 'name' => $user['name'],
                 'email' => $user['email'],
                 'password' => $user['password'],
-                'role_id' => $roleId,
+                'position_id' => $positionId,
                 'department_id' => $departmentId,
                 'country_id' => 48,
                 'state_id' => 2898,
@@ -48,14 +48,14 @@ class UserSeeder extends Seeder
             ]);
         }
 
-        $roleId = Role::where('nombre', 'ADMINISTRADOR')->first()->id;
+        $positionId = Position::where('nombre', 'JEFE')->first()->id;
         $departmentId = Department::where('nombre', 'OFICINA DE INFRAESTRUCTURA TECNOLÓGICA')->first()->id;
 
         User::create([
             'name' => 'Moises Corcho',
             'email' => 'mcorchoperez@gmail.com',
             'password' => bcrypt('password'),
-            'role_id' => $roleId,
+            'position_id' => $positionId,
             'department_id' => $departmentId,
             'country_id' => 48,
             'state_id' => 2898,

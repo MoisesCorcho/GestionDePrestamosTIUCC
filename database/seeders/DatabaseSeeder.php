@@ -2,12 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use App\Models\User;
-use App\Models\Product;
-use App\Models\Department;
-use App\Models\ProductUnit;
 use Illuminate\Database\Seeder;
 use Database\Seeders\WorldTableSeeder;
 
@@ -26,7 +20,7 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call(WorldTableSeeder::class);
-        $this->call(RoleSeeder::class);
+        $this->call(PositionSeeder::class);
         $this->call(DepartmentSeeder::class);
         $this->call(ProductSeeder::class);
         $this->call(UserSeeder::class);

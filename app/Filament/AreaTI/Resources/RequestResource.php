@@ -420,7 +420,7 @@ class RequestResource extends Resource
                     ->button()
                     ->requiresConfirmation() // Opcional: Confirmación antes de ejecutar
                     ->modalHeading('Completar Solicitud') // Título del modal
-                    ->modalDescription('Está seguro que desea completar esta solicitud? Esta acción no puede ser desecha. Completar la solicitud, significa que el prestatario ya ha devuelto los productos prestados y que se le ha devuelto su carnet.')
+                    ->modalDescription('Está seguro que desea completar esta solicitud? Esta acción no puede ser desecha. Completar la solicitud, significa que el prestatario ya ha devuelto los productos prestados y que se le ha devuelto su Carnet.')
                     ->modalSubmitActionLabel('Si, Completar')
                     ->modalIcon('heroicon-o-check-badge')
                     ->modalCancelAction(fn(StaticAction $action) => $action->label('Cerrar'))
