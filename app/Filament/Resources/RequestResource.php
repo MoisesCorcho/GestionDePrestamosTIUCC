@@ -18,6 +18,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
+use App\Traits\RequestResourceTrait;
 use Filament\Infolists\Components\TextEntry;
 use App\Filament\Resources\RequestResource\Pages;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -26,6 +27,8 @@ use App\Filament\Resources\RequestResource\RelationManagers;
 
 class RequestResource extends Resource
 {
+    use RequestResourceTrait;
+
     protected static ?string $model = Request::class;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document';
     // protected static ?string $navigationLabel = 'Peticiones';
@@ -61,16 +64,20 @@ class RequestResource extends Resource
                             ->required(),
 
                         Forms\Components\Select::make('general_product')
+                            ->label('Producto')
                             ->live()
                             ->relationship('requestProductUnits.productUnit.product', 'nombre')
                             ->afterStateUpdated(function (Set $set, Get $get) {
 
-                                $cantidadDisponible = ProductUnit::query()
-                                    ->where('product_id', $get('general_product'))
-                                    ->where('estado', 'disponible')
-                                    ->count();
+                                $productId = $get('general_product');
 
-                                $set('cantidad_disponible', $cantidadDisponible);
+                                $availableQuantity = RequestResourceTrait::calculateAvailableQuantity($productId);
+
+                                $set('cantidad_disponible', $availableQuantity);
+
+                                $set('selected_products', null);
+
+                                RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
                             })
                             ->searchable()
                             ->preload()
@@ -80,7 +87,6 @@ class RequestResource extends Resource
 
                         Forms\Components\Select::make('selected_products')
                             ->label('Seleccionar Productos')
-                            ->multiple()
                             ->searchable()
                             ->preload()
                             ->live()
@@ -88,9 +94,21 @@ class RequestResource extends Resource
                             ->visible(fn($record) => $record === null) // No visible si estamos en edición
                             ->dehydrated(false) // Esto evita que el campo se intente guardar en la base de datos
                             ->options(function (Get $get) {
+
+                                $selectedProducts = $get('requestProductUnits');
+
+                                $selectedProductsID = [];
+
+                                foreach ($selectedProducts as $selectedProduct) {
+                                    array_push($selectedProductsID, $selectedProduct['product_unit_id']);
+                                }
+
                                 return ProductUnit::query()
                                     ->where('estado', 'disponible')
                                     ->where('product_id', $get('general_product'))
+                                    ->whereNot(function (Builder $query) use ($selectedProductsID) {
+                                        $query->whereIn('id', $selectedProductsID);
+                                    })
                                     ->with('product')
                                     ->get()
                                     ->mapWithKeys(function ($productUnit) {
@@ -103,50 +121,34 @@ class RequestResource extends Resource
 
                                 if (!$state) return;
 
-                                $producto = ProductUnit::find($state)[0];
+                                $requestQuatity = $get('cantidad_solicitada');
 
-                                if ($producto) {
+                                $set('cantidad_solicitada', $requestQuatity + 1);
 
-                                    // se establece en la cantidad solicitada la cantidad de objetos elegido en este campo 'selected_products'
-                                    $set('cantidad_solicitada', count($state));
+                                $productUnit = ProductUnit::find($state);
 
-                                    // Se cuentan la cantidad de productos seleccionados que concuerden con el producto general seleccionado
-                                    $contarProductoActual = ProductUnit::query()
-                                        ->where('product_id', $get('general_product'))
-                                        ->whereIn('id', $state)
-                                        ->count();
+                                if ($productUnit) {
 
-                                    // Se obtiene la cantidad de productos disponibles
-                                    $cantidadDisponible = ProductUnit::query()
-                                        ->where('product_id', $get('general_product'))
-                                        ->where('estado', 'disponible')
-                                        ->count();
+                                    $addRepeaterData = [
+                                        'unit_nombre' => $productUnit->product->nombre ?? '',
+                                        'unit_marca' => $productUnit->product->marca ?? '',
+                                        'unit_modelo' => $productUnit->product->modelo ?? '',
+                                        'unit_codigo_inventario' => $productUnit->codigo_inventario ?? '',
+                                        'unit_serie' => $productUnit->serie ?? '',
+                                        'product_unit_id' => $productUnit->id,
+                                    ];
 
-                                    // A la cantidad disponible del producto general se le restan los que actualmente se han escogido
-                                    $cantidadDisponible -= $contarProductoActual;
+                                    $actualRepeaterData = $get('requestProductUnits') ?? [];
 
-                                    // Se establece la cantidad disponible en el campo llamado 'cantidad_disponible'
-                                    $set('cantidad_disponible', $cantidadDisponible);
+                                    array_push($actualRepeaterData, $addRepeaterData);
 
-                                    // Se obtienen los productos que han sido seleccionados en el campo 'selected_products'
-                                    $selectedProducts = ProductUnit::whereIn('id', $state)->get();
-
-                                    // Se mapea/recorre el array de $selectedProducts y por cada cual se establece un nuevo Repeater
-                                    if ($selectedProducts->isNotEmpty()) {
-                                        $repeaterData = $selectedProducts->map(function ($productUnit) {
-                                            return [
-                                                'unit_nombre' => $productUnit->product->nombre ?? '',
-                                                'unit_marca' => $productUnit->product->marca ?? '',
-                                                'unit_modelo' => $productUnit->product->modelo ?? '',
-                                                'unit_codigo_inventario' => $productUnit->codigo_inventario ?? '',
-                                                'unit_serie' => $productUnit->serie ?? '',
-                                                'product_unit_id' => $productUnit->id,
-                                            ];
-                                        })->toArray();
-
-                                        $set('requestProductUnits', $repeaterData);
-                                    }
+                                    $set('requestProductUnits', $actualRepeaterData);
                                 }
+
+                                RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
+
+                                // Se limpia el campo
+                                $set('selected_products', null);
                             }),
 
                         Forms\Components\TextInput::make('cantidad_disponible')
@@ -157,6 +159,7 @@ class RequestResource extends Resource
                             ->numeric(),
 
                         Forms\Components\TextInput::make('cantidad_solicitada')
+                            ->default(0)
                             ->disabled()
                             ->dehydrated(true) // Asegura que el valor se envíe a la base de datos
                             ->numeric(),
@@ -224,17 +227,22 @@ class RequestResource extends Resource
                                 Hidden::make('product_unit_id')
                             ])
                             ->columns(5)
+                            ->afterStateUpdated(function (Set $set, Get $get) {
+                                $requestQuatity = $get('cantidad_solicitada');
+
+                                $set('cantidad_solicitada', $requestQuatity - 1);
+
+                                RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
+                            })
                             ->afterStateHydrated(function (Set $set, Get $get) {
                                 $productId = $get('product_id'); // Obtén el producto seleccionado
                                 if ($productId) {
                                     // Lógica para obtener la cantidad disponible del producto
-                                    $cantidadDisponible = \App\Models\ProductUnit::query()
-                                        ->where('product_id', $productId)
-                                        ->where('estado', 'disponible')
-                                        ->count();
+
+                                    $availableQuantity = RequestResourceTrait::calculateAvailableQuantity($productId);
 
                                     // Establece el estado del campo
-                                    $set('cantidad_disponible', $cantidadDisponible);
+                                    $set('cantidad_disponible', $availableQuantity);
                                 }
                             })
                             // ->collapsible()
@@ -332,7 +340,7 @@ class RequestResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    // Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

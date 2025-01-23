@@ -17,6 +17,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Shanerbaner82\PanelRoles\PanelRoles;
 
 class AreaTIPanelProvider extends PanelProvider
 {
@@ -27,7 +28,12 @@ class AreaTIPanelProvider extends PanelProvider
             ->path('areaTI')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Blue,
+            ])
+            ->plugins([
+                PanelRoles::make()
+                    ->roleToAssign('area_ti')
+                    ->restrictedRoles(['area_ti', 'super_admin'])
             ])
             ->discoverResources(in: app_path('Filament/AreaTI/Resources'), for: 'App\\Filament\\AreaTI\\Resources')
             ->discoverPages(in: app_path('Filament/AreaTI/Pages'), for: 'App\\Filament\\AreaTI\\Pages')

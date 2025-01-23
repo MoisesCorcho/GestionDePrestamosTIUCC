@@ -20,10 +20,16 @@ class CreateRequest extends CreateRecord
 
     protected function afterCreate(): void
     {
-        $requestedProductsId = $this->data['selected_products'];
+        $requestedProducts = $this->data['requestProductUnits'];
+
+        $requestedProductsIDs = [];
+
+        foreach ($requestedProducts as $requstProduct) {
+            array_push($requestedProductsIDs, $requstProduct['product_unit_id']);
+        }
 
         ProductUnit::query()
-            ->whereIn('id', $requestedProductsId)
+            ->whereIn('id', $requestedProductsIDs)
             ->update([
                 'estado' => 'reservado'
             ]);
