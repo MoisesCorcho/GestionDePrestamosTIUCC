@@ -69,12 +69,6 @@ class RequestResource extends Resource
                             ->relationship('requestProductUnits.productUnit.product', 'nombre')
                             ->afterStateUpdated(function (Set $set, Get $get) {
 
-                                $productId = $get('general_product');
-
-                                $availableQuantity = RequestResourceTrait::calculateAvailableQuantity($productId);
-
-                                $set('cantidad_disponible', $availableQuantity);
-
                                 $set('selected_products', null);
 
                                 RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
@@ -95,55 +89,11 @@ class RequestResource extends Resource
                             ->dehydrated(false) // Esto evita que el campo se intente guardar en la base de datos
                             ->options(function (Get $get) {
 
-                                $selectedProducts = $get('requestProductUnits');
-
-                                $selectedProductsID = [];
-
-                                foreach ($selectedProducts as $selectedProduct) {
-                                    array_push($selectedProductsID, $selectedProduct['product_unit_id']);
-                                }
-
-                                return ProductUnit::query()
-                                    ->where('estado', 'disponible')
-                                    ->where('product_id', $get('general_product'))
-                                    ->whereNot(function (Builder $query) use ($selectedProductsID) {
-                                        $query->whereIn('id', $selectedProductsID);
-                                    })
-                                    ->with('product')
-                                    ->get()
-                                    ->mapWithKeys(function ($productUnit) {
-                                        return [
-                                            $productUnit->id => "ID: {$productUnit->id} - Producto: {$productUnit->product->nombre}"
-                                        ];
-                                    });
+                                return RequestResourceTrait::getSelectedProductOptions($get);
                             })
                             ->afterStateUpdated(function ($state, Set $set, Get $get) {
 
-                                if (!$state) return;
-
-                                $requestQuatity = $get('cantidad_solicitada');
-
-                                $set('cantidad_solicitada', $requestQuatity + 1);
-
-                                $productUnit = ProductUnit::find($state);
-
-                                if ($productUnit) {
-
-                                    $addRepeaterData = [
-                                        'unit_nombre' => $productUnit->product->nombre ?? '',
-                                        'unit_marca' => $productUnit->product->marca ?? '',
-                                        'unit_modelo' => $productUnit->product->modelo ?? '',
-                                        'unit_codigo_inventario' => $productUnit->codigo_inventario ?? '',
-                                        'unit_serie' => $productUnit->serie ?? '',
-                                        'product_unit_id' => $productUnit->id,
-                                    ];
-
-                                    $actualRepeaterData = $get('requestProductUnits') ?? [];
-
-                                    array_push($actualRepeaterData, $addRepeaterData);
-
-                                    $set('requestProductUnits', $actualRepeaterData);
-                                }
+                                RequestResourceTrait::addItemToRepeater($state, $get, $set);
 
                                 RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
 
@@ -228,23 +178,10 @@ class RequestResource extends Resource
                             ])
                             ->columns(5)
                             ->afterStateUpdated(function (Set $set, Get $get) {
-                                $requestQuatity = $get('cantidad_solicitada');
-
-                                $set('cantidad_solicitada', $requestQuatity - 1);
 
                                 RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
                             })
-                            ->afterStateHydrated(function (Set $set, Get $get) {
-                                $productId = $get('product_id'); // Obtén el producto seleccionado
-                                if ($productId) {
-                                    // Lógica para obtener la cantidad disponible del producto
-
-                                    $availableQuantity = RequestResourceTrait::calculateAvailableQuantity($productId);
-
-                                    // Establece el estado del campo
-                                    $set('cantidad_disponible', $availableQuantity);
-                                }
-                            })
+                            ->afterStateHydrated(function (Set $set, Get $get) {})
                             // ->collapsible()
                             ->defaultItems(0)
                             ->addable(false)
@@ -265,21 +202,7 @@ class RequestResource extends Resource
                     ->label('Artículos Prestados')
                     ->getStateUsing(function ($record) {
 
-                        // Obtener los productos y la cantidad solicitada
-                        $articles = $record->requestProductUnits->map(function ($requestProductUnit) {
-                            $productName = $requestProductUnit->productUnit->product->nombre ?? 'Producto desconocido';
-
-                            return "{$productName}";
-                        });
-
-                        $groupedArticles = $articles->countBy();
-
-                        $articles = $groupedArticles->map(function ($quantity, $article) {
-                            return "{$article} x {$quantity}";
-                        });
-
-                        // Combina los nombres de los artículos en una cadena
-                        return $articles->join(', ');
+                        return RequestResourceTrait::formatRequestedArticles($record);
                     })
                     ->badge()
                     ->separator(',')
@@ -290,18 +213,8 @@ class RequestResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('estado')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'pendiente' => 'warning',
-                        'aceptado' => 'success',
-                        'rechazado' => 'danger',
-                        'completado' => 'info',
-                    })
-                    ->icon(fn(string $state): string => match ($state) {
-                        'pendiente' => 'heroicon-o-clock', // Reloj para indicar espera
-                        'aceptado' => 'heroicon-o-check-circle', // Círculo con check para indicar aceptación
-                        'rechazado' => 'heroicon-o-x-circle', // Círculo con una X para indicar rechazo
-                        'completado' => 'heroicon-o-check-badge', // Insignia con check para indicar finalización
-                    }),
+                    ->color(fn(string $state): string => RequestResourceTrait::getStateColor($state))
+                    ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state)),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -317,26 +230,8 @@ class RequestResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
-                    ->before(function ($record) {
-
-                        // Obtén los product_unit_id antes de que se elimine el registro
-                        $productUnitIds = $record->requestProductUnits->pluck('product_unit_id');
-
-                        // Guarda los IDs en el registro para acceder en el after
-                        $record->setRelation('product_unit_ids_to_update', $productUnitIds);
-                    })
-                    ->after(function ($record) {
-
-                        // Se obtienen los datos guardados en la relacion establecida antes de eliminar el request
-                        $productUnitIds = $record->getRelation('product_unit_ids_to_update');
-
-                        if ($record->estado == 'pendiente' || $record->estado == 'aceptado') {
-
-                            ProductUnit::query()
-                                ->whereIn('id', $productUnitIds)
-                                ->update(['estado' => 'disponible']);
-                        }
-                    }),
+                    ->before(fn($record) => RequestResourceTrait::beforeDelete($record))
+                    ->after(fn($record) => RequestResourceTrait::afterDelete($record)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
