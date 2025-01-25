@@ -15,7 +15,7 @@ class CreateRequest extends CreateRecord
 
     protected function beforeCreate(): void
     {
-        // dd($this->data);
+        // dd($this->data, count($this->data['requestProductUnits']));
     }
 
     protected function afterCreate(): void

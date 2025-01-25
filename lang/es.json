@@ -16,5 +16,27 @@
     "States": "Estados",
     "State": "Estado",
     "Users": "Usuarios",
-    "User": "Usuario"
+    "User": "Usuario",
+
+    "Pending": "Pendiente",
+    "Accepted": "Aceptado",
+    "Rejected": "Rechazado",
+    "Completed": "Completado",
+
+    "Selected Products": "Productos Seleccionados",
+    "Select Products": "Seleccionar Productos",
+    "Available Quantity": "Cantidad Disponible",
+    "Requested Quantity": "Cantidad Solicitada",
+    "Reasons for Rejection": "Razones de Rechazo",
+    "Borrowed Items": "Articulos Prestados",
+    "Created At": "Creado En",
+    "Updated At": "Actualizado En",
+
+    "Name": "Nombre",
+    "Brand": "Marca",
+    "Model": "Modelo",
+    "Stock Code": "Codigo Inventario",
+    "Series": "Serie",
+
+    "You must add at least one product": "Debes añadir al menos un producto"
 }

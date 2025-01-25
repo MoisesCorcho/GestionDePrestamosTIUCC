@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use Closure;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Request;
@@ -11,19 +12,20 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\ProductUnit;
 use Filament\Resources\Resource;
+use App\Traits\RequestResourceTrait;
+use Filament\Forms\Components\Field;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Component;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
-use App\Traits\RequestResourceTrait;
 use Filament\Infolists\Components\TextEntry;
 use App\Filament\Resources\RequestResource\Pages;
 use Filament\Infolists\Components\RepeatableEntry;
 use App\Filament\Resources\RequestResource\RelationManagers;
-
 
 class RequestResource extends Resource
 {
@@ -59,12 +61,13 @@ class RequestResource extends Resource
                     ->schema([
 
                         Forms\Components\Select::make('user_id')
+                            ->label(__('User'))
                             ->relationship('user', 'name')
                             ->disabled(fn($record) => $record !== null) // Desactivado si estamos en edición
                             ->required(),
 
                         Forms\Components\Select::make('general_product')
-                            ->label('Producto')
+                            ->label(__('Product'))
                             ->live()
                             ->relationship('requestProductUnits.productUnit.product', 'nombre')
                             ->afterStateUpdated(function (Set $set, Get $get) {
@@ -80,7 +83,7 @@ class RequestResource extends Resource
                             ->dehydrated(false), // Esto evita que el campo se intente guardar en la base de datos,
 
                         Forms\Components\Select::make('selected_products')
-                            ->label('Seleccionar Productos')
+                            ->label(__('Select Products'))
                             ->searchable()
                             ->preload()
                             ->live()
@@ -103,31 +106,34 @@ class RequestResource extends Resource
 
                         Forms\Components\TextInput::make('cantidad_disponible')
                             ->live()
-                            ->label('Cantidad Disponible')
+                            ->label(__('Available Quantity'))
                             ->disabled()
                             ->visible(fn($record) => $record === null) // No visible si estamos en edición
                             ->numeric(),
 
                         Forms\Components\TextInput::make('cantidad_solicitada')
+                            ->label(__('Requested Quantity'))
                             ->default(0)
                             ->disabled()
                             ->dehydrated(true) // Asegura que el valor se envíe a la base de datos
                             ->numeric(),
 
                         Forms\Components\Select::make('estado')
+                            ->label(__('State'))
                             ->live()
                             ->disabled(fn($record) => $record === null) // Desactivado si estamos en creacion
                             ->dehydrated(true) // Esto evita que el campo se intente guardar en la base de datos
                             ->default('pendiente')
                             ->options([
-                                'pendiente' => 'Pendiente',
-                                'aceptado' => 'Aceptado',
-                                'rechazado' => 'Rechazado',
-                                'completado' => 'Completado',
+                                'pendiente' => __('Pending'),
+                                'aceptado' => __('Accepted'),
+                                'rechazado' => __('Rejected'),
+                                'completado' => __('Completed'),
                             ])
                             ->required(),
 
                         Section::make('Razones de Rechazo')
+                            ->label(__('Reasons for Rejection'))
                             ->schema([
                                 Forms\Components\TextArea::make('motivo_rechazo')
                                     ->required()
@@ -137,7 +143,7 @@ class RequestResource extends Resource
 
                     ])->columns(3),
 
-                Section::make('Productos Seleccionados')
+                Section::make(__('Selected Products'))
                     ->schema([
                         Repeater::make('requestProductUnits')
                             ->label('')
@@ -145,31 +151,31 @@ class RequestResource extends Resource
                             ->schema([
                                 Forms\Components\TextInput::make('unit_nombre')
                                     ->disabled()
-                                    ->label('Nombre')
+                                    ->label(__('Name'))
                                     ->formatStateUsing(function ($state, $record) {
                                         return $record->productUnit->product->nombre ?? 0;
                                     }),
                                 Forms\Components\TextInput::make('unit_marca')
                                     ->disabled()
-                                    ->label('Marca')
+                                    ->label(__('Brand'))
                                     ->formatStateUsing(function ($state, $record) {
                                         return $record->productUnit->product->marca ?? 0;
                                     }),
                                 Forms\Components\TextInput::make('unit_modelo')
                                     ->disabled()
-                                    ->label('Modelo')
+                                    ->label(__('Model'))
                                     ->formatStateUsing(function ($state, $record) {
                                         return $record->productUnit->product->modelo ?? 0;
                                     }),
                                 Forms\Components\TextInput::make('unit_codigo_inventario')
                                     ->disabled()
-                                    ->label('Codigo Inventario')
+                                    ->label(__('Stock Code'))
                                     ->formatStateUsing(function ($state, $record) {
                                         return $record->productUnit->codigo_inventario ?? 0;
                                     }),
                                 Forms\Components\TextInput::make('unit_serie')
                                     ->disabled()
-                                    ->label('Serie')
+                                    ->label(__('Series'))
                                     ->formatStateUsing(function ($state, $record) {
                                         return $record->productUnit->serie ?? 0;
                                     }),
@@ -187,7 +193,21 @@ class RequestResource extends Resource
                             ->addable(false)
                             ->deletable(fn($record) => $record === null) // Eliminacion desactivada en edicion
                             ->columnSpan(2)
-                            ->addActionLabel('Añadir Producto'),
+                            ->addActionLabel('Añadir Producto')
+                            ->rules([
+                                function () {
+                                    return function (string $attribute, $value, Closure $fail) {
+                                        if (count($value) === 0) {
+                                            // El $fail es lo que evita que la peticion se cree.
+                                            $fail('');
+                                            Notification::make()
+                                                ->title(__('You must add almost one product'))
+                                                ->danger()
+                                                ->send();
+                                        }
+                                    };
+                                },
+                            ]),
                     ]),
             ]);
     }
@@ -199,7 +219,7 @@ class RequestResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('articulos_prestados')
-                    ->label('Artículos Prestados')
+                    ->label(__('Borrowed Items'))
                     ->getStateUsing(function ($record) {
 
                         return RequestResourceTrait::formatRequestedArticles($record);
@@ -209,17 +229,21 @@ class RequestResource extends Resource
                     ->color('primary'),
 
                 Tables\Columns\TextColumn::make('cantidad_solicitada')
+                    ->label(__('Requested Quantity'))
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('estado')
+                    ->label(__('State'))
                     ->badge()
                     ->color(fn(string $state): string => RequestResourceTrait::getStateColor($state))
                     ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state)),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('Created At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('Updated At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
