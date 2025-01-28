@@ -2,6 +2,7 @@
 
 namespace App\Filament\AreaTI\Resources;
 
+use Closure;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Request;
@@ -13,6 +14,7 @@ use App\Models\ProductUnit;
 use Filament\Actions\Action;
 use Filament\Resources\Resource;
 use Filament\Actions\StaticAction;
+use App\Traits\RequestResourceTrait;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
@@ -24,6 +26,8 @@ use App\Filament\AreaTI\Resources\RequestResource\RelationManagers;
 
 class RequestResource extends Resource
 {
+    use RequestResourceTrait;
+
     protected static ?string $model = Request::class;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document';
     // protected static ?string $navigationLabel = 'Peticiones';
@@ -54,21 +58,20 @@ class RequestResource extends Resource
                     ->schema([
 
                         Forms\Components\Select::make('user_id')
+                            ->label(__('User'))
                             ->relationship('user', 'name')
                             ->disabled(fn($record) => $record !== null) // Desactivado si estamos en edición
                             ->required(),
 
                         Forms\Components\Select::make('general_product')
+                            ->label(__('Product'))
                             ->live()
                             ->relationship('requestProductUnits.productUnit.product', 'nombre')
                             ->afterStateUpdated(function (Set $set, Get $get) {
 
-                                $cantidadDisponible = ProductUnit::query()
-                                    ->where('product_id', $get('general_product'))
-                                    ->where('estado', 'disponible')
-                                    ->count();
+                                $set('selected_products', null);
 
-                                $set('cantidad_disponible', $cantidadDisponible);
+                                RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
                             })
                             ->searchable()
                             ->preload()
@@ -77,8 +80,7 @@ class RequestResource extends Resource
                             ->dehydrated(false), // Esto evita que el campo se intente guardar en la base de datos,
 
                         Forms\Components\Select::make('selected_products')
-                            ->label('Seleccionar Productos')
-                            ->multiple()
+                            ->label(__('Select Products'))
                             ->searchable()
                             ->preload()
                             ->live()
@@ -86,103 +88,59 @@ class RequestResource extends Resource
                             ->visible(fn($record) => $record === null) // No visible si estamos en edición
                             ->dehydrated(false) // Esto evita que el campo se intente guardar en la base de datos
                             ->options(function (Get $get) {
-                                return ProductUnit::query()
-                                    ->where('estado', 'disponible')
-                                    ->where('product_id', $get('general_product'))
-                                    ->with('product')
-                                    ->get()
-                                    ->mapWithKeys(function ($productUnit) {
-                                        return [
-                                            $productUnit->id => "ID: {$productUnit->id} - Producto: {$productUnit->product->nombre}"
-                                        ];
-                                    });
+
+                                return RequestResourceTrait::getSelectedProductOptions($get);
                             })
                             ->afterStateUpdated(function ($state, Set $set, Get $get) {
 
-                                if (!$state) return;
+                                RequestResourceTrait::addItemToRepeater($state, $get, $set);
 
-                                $producto = ProductUnit::find($state)[0];
+                                RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
 
-                                if ($producto) {
-
-                                    // se establece en la cantidad solicitada la cantidad de objetos elegido en este campo 'selected_products'
-                                    $set('cantidad_solicitada', count($state));
-
-                                    // Se cuentan la cantidad de productos seleccionados que concuerden con el producto general seleccionado
-                                    $contarProductoActual = ProductUnit::query()
-                                        ->where('product_id', $get('general_product'))
-                                        ->whereIn('id', $state)
-                                        ->count();
-
-                                    // Se obtiene la cantidad de productos disponibles
-                                    $cantidadDisponible = ProductUnit::query()
-                                        ->where('product_id', $get('general_product'))
-                                        ->where('estado', 'disponible')
-                                        ->count();
-
-                                    // A la cantidad disponible del producto general se le restan los que actualmente se han escogido
-                                    $cantidadDisponible -= $contarProductoActual;
-
-                                    // Se establece la cantidad disponible en el campo llamado 'cantidad_disponible'
-                                    $set('cantidad_disponible', $cantidadDisponible);
-
-                                    // Se obtienen los productos que han sido seleccionados en el campo 'selected_products'
-                                    $selectedProducts = ProductUnit::whereIn('id', $state)->get();
-
-                                    // Se mapea/recorre el array de $selectedProducts y por cada cual se establece un nuevo Repeater
-                                    if ($selectedProducts->isNotEmpty()) {
-                                        $repeaterData = $selectedProducts->map(function ($productUnit) {
-                                            return [
-                                                'unit_nombre' => $productUnit->product->nombre ?? '',
-                                                'unit_marca' => $productUnit->product->marca ?? '',
-                                                'unit_modelo' => $productUnit->product->modelo ?? '',
-                                                'unit_codigo_inventario' => $productUnit->codigo_inventario ?? '',
-                                                'unit_serie' => $productUnit->serie ?? '',
-                                                'product_unit_id' => $productUnit->id,
-                                            ];
-                                        })->toArray();
-
-                                        $set('requestProductUnits', $repeaterData);
-                                    }
-                                }
+                                // Se limpia el campo
+                                $set('selected_products', null);
                             }),
 
                         Forms\Components\TextInput::make('cantidad_disponible')
                             ->live()
-                            ->label('Cantidad Disponible')
-                            ->visible(fn($record) => $record === null) // No visible si estamos en edición
+                            ->label(__('Available Quantity'))
                             ->disabled()
+                            ->visible(fn($record) => $record === null) // No visible si estamos en edición
                             ->numeric(),
 
                         Forms\Components\TextInput::make('cantidad_solicitada')
+                            ->label(__('Requested Quantity'))
+                            ->default(0)
                             ->disabled()
                             ->dehydrated(true) // Asegura que el valor se envíe a la base de datos
                             ->numeric(),
 
                         Forms\Components\Select::make('estado')
+                            ->label(__('State'))
                             ->live()
                             ->disabled(true) // Desactivado si estamos en creacion
                             ->dehydrated(true) // Esto evita que el campo se intente guardar en la base de datos
                             ->default('pendiente')
                             ->options([
-                                'pendiente' => 'Pendiente',
-                                'aceptado' => 'Aceptado',
-                                'rechazado' => 'Rechazado',
-                                'completado' => 'Completado',
+                                'pendiente' => __('Pending'),
+                                'aceptado' => __('Accepted'),
+                                'rechazado' => __('Rejected'),
+                                'completado' => __('Completed'),
                             ])
                             ->required(),
 
                         Section::make('Razones de Rechazo')
+                            ->label(__('Reasons for Rejection'))
                             ->schema([
                                 Forms\Components\TextArea::make('motivo_rechazo')
-                                    ->label('')
+                                    ->required()
+                                    ->label('Motivo Rechazo')
                             ])
                             ->visible(fn(Get $get) => $get('estado') === 'rechazado')
-                            ->disabled(fn($record) => $record !== null) // Desactivado si estamos en edicion
 
                     ])->columns(3),
 
-                Section::make('Productos Seleccionados')
+                Section::make(__('Selected Products'))
                     ->schema([
                         Repeater::make('requestProductUnits')
                             ->label('')
@@ -190,31 +148,31 @@ class RequestResource extends Resource
                             ->schema([
                                 Forms\Components\TextInput::make('unit_nombre')
                                     ->disabled()
-                                    ->label('Nombre')
+                                    ->label(__('Name'))
                                     ->formatStateUsing(function ($state, $record) {
                                         return $record->productUnit->product->nombre ?? 0;
                                     }),
                                 Forms\Components\TextInput::make('unit_marca')
                                     ->disabled()
-                                    ->label('Marca')
+                                    ->label(__('Brand'))
                                     ->formatStateUsing(function ($state, $record) {
                                         return $record->productUnit->product->marca ?? 0;
                                     }),
                                 Forms\Components\TextInput::make('unit_modelo')
                                     ->disabled()
-                                    ->label('Modelo')
+                                    ->label(__('Model'))
                                     ->formatStateUsing(function ($state, $record) {
                                         return $record->productUnit->product->modelo ?? 0;
                                     }),
                                 Forms\Components\TextInput::make('unit_codigo_inventario')
                                     ->disabled()
-                                    ->label('Codigo Inventario')
+                                    ->label(__('Stock Code'))
                                     ->formatStateUsing(function ($state, $record) {
                                         return $record->productUnit->codigo_inventario ?? 0;
                                     }),
                                 Forms\Components\TextInput::make('unit_serie')
                                     ->disabled()
-                                    ->label('Serie')
+                                    ->label(__('Series'))
                                     ->formatStateUsing(function ($state, $record) {
                                         return $record->productUnit->serie ?? 0;
                                     }),
@@ -222,25 +180,31 @@ class RequestResource extends Resource
                                 Hidden::make('product_unit_id')
                             ])
                             ->columns(5)
-                            ->afterStateHydrated(function (Set $set, Get $get) {
-                                $productId = $get('product_id'); // Obtén el producto seleccionado
-                                if ($productId) {
-                                    // Lógica para obtener la cantidad disponible del producto
-                                    $cantidadDisponible = \App\Models\ProductUnit::query()
-                                        ->where('product_id', $productId)
-                                        ->where('estado', 'disponible')
-                                        ->count();
+                            ->afterStateUpdated(function (Set $set, Get $get) {
 
-                                    // Establece el estado del campo
-                                    $set('cantidad_disponible', $cantidadDisponible);
-                                }
+                                RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
                             })
+                            ->afterStateHydrated(function (Set $set, Get $get) {})
                             // ->collapsible()
                             ->defaultItems(0)
                             ->addable(false)
                             ->deletable(fn($record) => $record === null) // Eliminacion desactivada en edicion
                             ->columnSpan(2)
-                            ->addActionLabel('Añadir Producto'),
+                            ->addActionLabel('Añadir Producto')
+                            ->rules([
+                                function () {
+                                    return function (string $attribute, $value, Closure $fail) {
+                                        if (count($value) === 0) {
+                                            // El $fail es lo que evita que la peticion se cree.
+                                            $fail('');
+                                            Notification::make()
+                                                ->title(__('You must add at least one product'))
+                                                ->danger()
+                                                ->send();
+                                        }
+                                    };
+                                },
+                            ]),
                     ]),
             ]);
     }
@@ -250,6 +214,7 @@ class RequestResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
+                    ->label(__('User'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('articulos_prestados')
                     ->label('Artículos Prestados')
@@ -316,7 +281,7 @@ class RequestResource extends Resource
                         // El boton de aceptar solo estará visible para request en estado pendiente
                         return $record->estado == 'pendiente';
                     })
-                    ->label('Aceptar')
+                    ->label(__('Accept'))
                     ->action(function ($record) {
 
                         // Se cambia el estado de los productos asociados al request a prestado
@@ -354,7 +319,7 @@ class RequestResource extends Resource
                         // El boton de rechazar solo estará visible para request en estado pendiente
                         return $record->estado == 'pendiente';
                     })
-                    ->label('Rechazar')
+                    ->label(__('Decline'))
                     ->action(function ($record, array $data) {
 
                         // Se cambia el estado de los productos asociados al request a prestado

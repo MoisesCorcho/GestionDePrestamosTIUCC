@@ -10,22 +10,14 @@ use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
-use App\Models\ProductUnit;
 use Filament\Resources\Resource;
 use App\Traits\RequestResourceTrait;
-use Filament\Forms\Components\Field;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Component;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
-use Filament\Infolists\Components\TextEntry;
 use App\Filament\Resources\RequestResource\Pages;
-use Filament\Infolists\Components\RepeatableEntry;
-use App\Filament\Resources\RequestResource\RelationManagers;
 
 class RequestResource extends Resource
 {
@@ -201,7 +193,7 @@ class RequestResource extends Resource
                                             // El $fail es lo que evita que la peticion se cree.
                                             $fail('');
                                             Notification::make()
-                                                ->title(__('You must add almost one product'))
+                                                ->title(__('You must add at least one product'))
                                                 ->danger()
                                                 ->send();
                                         }
