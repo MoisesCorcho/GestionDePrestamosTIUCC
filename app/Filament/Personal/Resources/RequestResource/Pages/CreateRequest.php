@@ -8,6 +8,9 @@ use App\Models\ProductUnit;
 use App\Models\RequestProductUnit;
 use Filament\Resources\Pages\CreateRecord;
 use App\Filament\Personal\Resources\RequestResource;
+use Filament\Notifications\Notification;
+use Filament\Notifications\Actions\Action;
+use Filament\Facades\Filament;
 
 class CreateRequest extends CreateRecord
 {
@@ -28,26 +31,36 @@ class CreateRequest extends CreateRecord
 
     protected function afterCreate(): void
     {
-        $cantidadSolicitada = $this->record->cantidad_solicitada;
+        $requestedProducts = $this->data['requestProductUnits'];
 
-        $productosDisponibles = ProductUnit::query()
-            ->where('product_id', $this->record['product_id'])
-            ->where('estado', 'disponible')
-            ->take($cantidadSolicitada) // Limitar cierta cantidad de registros
-            ->get();
+        $requestedProductsIDs = [];
 
-        foreach ($productosDisponibles as $productoItem) {
+        foreach ($requestedProducts as $requstProduct) {
+            array_push($requestedProductsIDs, $requstProduct['product_unit_id']);
+        }
 
-            // Se actualiza el estado de los productos reservados del stock disponible
-            $productoItem->update([
+        ProductUnit::query()
+            ->whereIn('id', $requestedProductsIDs)
+            ->update([
                 'estado' => 'reservado'
             ]);
 
-            // Se nutre la tabla pivote entre requests y product_units
-            RequestProductUnit::create([
-                'request_id' => $this->record->id,
-                'product_unit_id' => $productoItem->id,
-            ]);
-        }
+        //Send Notification to IT Users
+        $recipients = User::whereHas('roles', function ($query) {
+            $query->where('name', 'area_ti');
+        })->get();
+
+        Notification::make()
+            ->title(__('A Request Have Been Created'))
+            ->icon('heroicon-o-clipboard-document')
+            ->iconColor('warning')
+            ->actions([
+                Action::make('view')
+                    ->label('View Request')
+                    ->button()
+                    ->url(RequestResource::getUrl('edit', ['record' => $this->record->id], panel: 'areaTI')),
+                // ->openUrlInNewTab(),
+            ])
+            ->sendToDatabase($recipients);
     }
 }

@@ -19,6 +19,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
 use Filament\Notifications\Notification;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Personal\Resources\RequestResource\Pages;
 
@@ -128,6 +129,7 @@ class RequestResource extends Resource
                                     ->required()
                                     ->label('Motivo Rechazo')
                             ])
+                            ->disabled(true)
                             ->visible(fn(Get $get) => $get('estado') === 'rechazado')
 
                     ])->columns(3),
@@ -174,6 +176,8 @@ class RequestResource extends Resource
                             ->columns(5)
                             ->afterStateUpdated(function (Set $set, Get $get) {
 
+                                $set('cantidad_solicitada', $get('cantidad_solicitada') - 1);
+
                                 RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
                             })
                             ->afterStateHydrated(function (Set $set, Get $get) {})
@@ -210,21 +214,7 @@ class RequestResource extends Resource
                     ->label('Artículos Prestados')
                     ->getStateUsing(function ($record) {
 
-                        // Obtener los productos y la cantidad solicitada
-                        $articles = $record->requestProductUnits->map(function ($requestProductUnit) {
-                            $productName = $requestProductUnit->productUnit->product->nombre ?? 'Producto desconocido';
-
-                            return "{$productName}";
-                        });
-
-                        $groupedArticles = $articles->countBy();
-
-                        $articles = $groupedArticles->map(function ($quantity, $article) {
-                            return "{$article} x {$quantity}";
-                        });
-
-                        // Combina los nombres de los artículos en una cadena
-                        return $articles->join(', ');
+                        return RequestResourceTrait::formatRequestedArticles($record);
                     })
                     ->badge()
                     ->separator(',')
@@ -235,18 +225,8 @@ class RequestResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('estado')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'pendiente' => 'warning',
-                        'aceptado' => 'success',
-                        'rechazado' => 'danger',
-                        'completado' => 'info',
-                    })
-                    ->icon(fn(string $state): string => match ($state) {
-                        'pendiente' => 'heroicon-o-clock', // Reloj para indicar espera
-                        'aceptado' => 'heroicon-o-check-circle', // Círculo con check para indicar aceptación
-                        'rechazado' => 'heroicon-o-x-circle', // Círculo con una X para indicar rechazo
-                        'completado' => 'heroicon-o-check-badge', // Insignia con check para indicar finalización
-                    }),
+                    ->color(fn(string $state): string => RequestResourceTrait::getStateColor($state))
+                    ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state)),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -258,7 +238,13 @@ class RequestResource extends Resource
             ])
             // ->recordUrl(fn($record) => null) // Se desactiva que las filas sean clickeables
             ->filters([
-                //
+                SelectFilter::make('estado')
+                    ->options([
+                        'aceptado' => __('Accepted'),
+                        'rechazado' => __('Rejected'),
+                        'completado' => __('Completed'),
+                        'pendiente' => __('Pending'),
+                    ])
             ])
             ->actions([
                 // Tables\Actions\EditAction::make(),
@@ -269,26 +255,8 @@ class RequestResource extends Resource
                     ->disabled(function ($record) {
                         return !($record->estado == 'pendiente');
                     })
-                    ->before(function ($record) {
-
-                        // Obtén los product_unit_id antes de que se elimine el registro
-                        $productUnitIds = $record->requestProductUnits->pluck('product_unit_id');
-
-                        // Guarda los IDs en el registro para acceder en el after
-                        $record->setRelation('product_unit_ids_to_update', $productUnitIds);
-                    })
-                    ->after(function ($record) {
-
-                        // Se obtienen los datos guardados en la relacion establecida antes de eliminar el request
-                        $productUnitIds = $record->getRelation('product_unit_ids_to_update');
-
-                        if ($record->estado == 'pendiente' || $record->estado == 'aceptado') {
-
-                            ProductUnit::query()
-                                ->whereIn('id', $productUnitIds)
-                                ->update(['estado' => 'disponible']);
-                        }
-                    }),
+                    ->before(fn($record) => RequestResourceTrait::beforeDelete($record))
+                    ->after(fn($record) => RequestResourceTrait::afterDelete($record)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

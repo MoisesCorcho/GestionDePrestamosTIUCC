@@ -4,6 +4,7 @@ namespace App\Filament\AreaTI\Resources;
 
 use Closure;
 use Filament\Forms;
+use App\Models\User;
 use Filament\Tables;
 use App\Models\Request;
 use Filament\Forms\Get;
@@ -19,6 +20,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
 use Filament\Notifications\Notification;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\AreaTI\Resources\RequestResource\Pages;
@@ -136,6 +138,7 @@ class RequestResource extends Resource
                                     ->required()
                                     ->label('Motivo Rechazo')
                             ])
+                            ->disabled(true)
                             ->visible(fn(Get $get) => $get('estado') === 'rechazado')
 
                     ])->columns(3),
@@ -182,6 +185,8 @@ class RequestResource extends Resource
                             ->columns(5)
                             ->afterStateUpdated(function (Set $set, Get $get) {
 
+                                $set('cantidad_solicitada', $get('cantidad_solicitada') - 1);
+
                                 RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
                             })
                             ->afterStateHydrated(function (Set $set, Get $get) {})
@@ -215,26 +220,19 @@ class RequestResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
                     ->label(__('User'))
+                    ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('user.position.nombre')
+                    ->label(__('Position'))
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('user.department.nombre')
+                    ->label(__('Department'))
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('articulos_prestados')
                     ->label('Artículos Prestados')
                     ->getStateUsing(function ($record) {
 
-                        // Obtener los productos y la cantidad solicitada
-                        $articles = $record->requestProductUnits->map(function ($requestProductUnit) {
-                            $productName = $requestProductUnit->productUnit->product->nombre ?? 'Producto desconocido';
-
-                            return "{$productName}";
-                        });
-
-                        $groupedArticles = $articles->countBy();
-
-                        $articles = $groupedArticles->map(function ($quantity, $article) {
-                            return "{$article} x {$quantity}";
-                        });
-
-                        // Combina los nombres de los artículos en una cadena
-                        return $articles->join(', ');
+                        return RequestResourceTrait::formatRequestedArticles($record);
                     })
                     ->badge()
                     ->separator(',')
@@ -245,18 +243,8 @@ class RequestResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('estado')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'pendiente' => 'warning',
-                        'aceptado' => 'success',
-                        'rechazado' => 'danger',
-                        'completado' => 'info',
-                    })
-                    ->icon(fn(string $state): string => match ($state) {
-                        'pendiente' => 'heroicon-o-clock', // Reloj para indicar espera
-                        'aceptado' => 'heroicon-o-check-circle', // Círculo con check para indicar aceptación
-                        'rechazado' => 'heroicon-o-x-circle', // Círculo con una X para indicar rechazo
-                        'completado' => 'heroicon-o-check-badge', // Insignia con check para indicar finalización
-                    }),
+                    ->color(fn(string $state): string => RequestResourceTrait::getStateColor($state))
+                    ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state)),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -268,7 +256,13 @@ class RequestResource extends Resource
             ])
             // ->recordUrl(fn($record) => null) // Se desactiva que las filas sean clickeables
             ->filters([
-                //
+                SelectFilter::make('estado')
+                    ->options([
+                        'aceptado' => __('Accepted'),
+                        'rechazado' => __('Rejected'),
+                        'completado' => __('Completed'),
+                        'pendiente' => __('Pending'),
+                    ])
             ])
             ->actions([
                 // Tables\Actions\EditAction::make(),
@@ -294,11 +288,8 @@ class RequestResource extends Resource
                         $record->estado = 'aceptado';
                         $record->save();
 
-                        // Opcional: Notificación
-                        Notification::make()
-                            ->title('Solicitud Aceptada')
-                            ->success()
-                            ->send();
+                        //Send Notification
+                        RequestResourceTrait::sendNotification($record);
                     })
                     ->button()
                     ->requiresConfirmation() // Opcional: Confirmación antes de ejecutar
@@ -333,11 +324,8 @@ class RequestResource extends Resource
                         $record->motivo_rechazo = $data['motivo_rechazo'];
                         $record->save();
 
-                        // Opcional: Notificación
-                        Notification::make()
-                            ->title('Solicitud Rechazada')
-                            ->success()
-                            ->send();
+                        //Send Notification
+                        RequestResourceTrait::sendNotification($record);
                     })
                     ->form([ // Campos del formulario en el modal
                         Forms\Components\Textarea::make('motivo_rechazo')
@@ -376,11 +364,8 @@ class RequestResource extends Resource
                         $record->estado = 'completado';
                         $record->save();
 
-                        // Opcional: Notificación
-                        Notification::make()
-                            ->title('Solicitud Completada')
-                            ->success()
-                            ->send();
+                        //Send Notification
+                        RequestResourceTrait::sendNotification($record);
                     })
                     ->button()
                     ->requiresConfirmation() // Opcional: Confirmación antes de ejecutar

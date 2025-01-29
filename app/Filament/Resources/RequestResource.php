@@ -16,6 +16,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
 use Filament\Notifications\Notification;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\RequestResource\Pages;
 
@@ -175,7 +176,9 @@ class RequestResource extends Resource
                                 Hidden::make('product_unit_id')
                             ])
                             ->columns(5)
-                            ->afterStateUpdated(function (Set $set, Get $get) {
+                            ->afterStateUpdated(function (Set $set, Get $get, $state) {
+
+                                $set('cantidad_solicitada', $get('cantidad_solicitada') - 1);
 
                                 RequestResourceTrait::calculateNewAvailableQuantity($get, $set);
                             })
@@ -209,6 +212,7 @@ class RequestResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('articulos_prestados')
                     ->label(__('Borrowed Items'))
@@ -241,7 +245,13 @@ class RequestResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                SelectFilter::make('estado')
+                    ->options([
+                        'aceptado' => __('Accepted'),
+                        'rechazado' => __('Rejected'),
+                        'completado' => __('Completed'),
+                        'pendiente' => __('Pending'),
+                    ])
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

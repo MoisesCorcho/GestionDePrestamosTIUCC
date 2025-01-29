@@ -35,6 +35,7 @@ class AreaTIPanelProvider extends PanelProvider
                     ->roleToAssign('area_ti')
                     ->restrictedRoles(['area_ti', 'super_admin'])
             ])
+            ->databaseNotifications()
             ->discoverResources(in: app_path('Filament/AreaTI/Resources'), for: 'App\\Filament\\AreaTI\\Resources')
             ->discoverPages(in: app_path('Filament/AreaTI/Pages'), for: 'App\\Filament\\AreaTI\\Pages')
             ->pages([

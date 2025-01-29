@@ -2,9 +2,12 @@
 
 namespace App\Traits;
 
+use App\Models\User;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use App\Models\ProductUnit;
+use Filament\Notifications\Actions\Action;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 
 trait RequestResourceTrait
@@ -150,5 +153,34 @@ trait RequestResourceTrait
                 ->whereIn('id', $productUnitIds)
                 ->update(['estado' => 'disponible']);
         }
+    }
+
+    public static function sendNotification($record)
+    {
+        $recipient = User::where('id', $record->user_id)->get();
+
+        $state = match ($record->estado) {
+            'aceptado' => 'Accepted',
+            'rechazado' => 'Declined',
+            'completado' => 'Completed',
+        };
+
+        Notification::make()
+            ->title(__("Your Request from " . $record->created_at->format('d/m/Y H:i') . " has been " . ucfirst($state)))
+            ->icon('heroicon-o-clipboard-document')
+            ->iconColor(match ($record->estado) {
+                'aceptado' => 'success',
+                'rechazado' => 'danger',
+                'completado' => 'info',
+                default => 'gray',
+            })
+            ->actions([
+                Action::make('view')
+                    ->label('View Request')
+                    ->button()
+                    ->url(\App\Filament\AreaTI\Resources\RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal')),
+                // ->openUrlInNewTab(),
+            ])
+            ->sendToDatabase($recipient);
     }
 }
