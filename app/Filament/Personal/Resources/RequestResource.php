@@ -125,7 +125,7 @@ class RequestResource extends Resource
                         Section::make('Razones de Rechazo')
                             ->label(__('Reasons for Rejection'))
                             ->schema([
-                                Forms\Components\TextArea::make('motivo_rechazo')
+                                Forms\Components\Textarea::make('motivo_rechazo')
                                     ->required()
                                     ->label('Motivo Rechazo')
                             ])

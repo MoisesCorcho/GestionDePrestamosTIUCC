@@ -45,6 +45,16 @@ class RequestResource extends Resource
         return parent::getEloquentQuery()->orderBy('created_at', 'desc');
     }
 
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return static::getModel()::where('estado', 'pendiente')->count() > 1 ? 'danger' : 'warning';
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::where('estado', 'pendiente')->count();
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -128,7 +138,7 @@ class RequestResource extends Resource
                         Section::make('Razones de Rechazo')
                             ->label(__('Reasons for Rejection'))
                             ->schema([
-                                Forms\Components\TextArea::make('motivo_rechazo')
+                                Forms\Components\Textarea::make('motivo_rechazo')
                                     ->required()
                                     ->label('Motivo Rechazo')
                             ])

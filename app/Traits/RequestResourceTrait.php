@@ -6,9 +6,15 @@ use App\Models\User;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use App\Models\ProductUnit;
-use Filament\Notifications\Actions\Action;
+use App\Notifications\NewRequest;
+use App\Notifications\RequestApproved;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Notifications\Actions\Action;
+use App\Filament\Personal\Resources\RequestResource;
+use App\Notifications\RequestCompleted;
+use App\Notifications\RequestRejected;
+use Illuminate\Support\Facades\Notification as NotificationEmail;
 
 trait RequestResourceTrait
 {
@@ -182,5 +188,112 @@ trait RequestResourceTrait
                 // ->openUrlInNewTab(),
             ])
             ->sendToDatabase($recipient);
+
+        if ($record->estado == 'aceptado') {
+            Notification::make()
+                ->title('Peticion Aceptada Satisfactoriamente')
+                ->success()
+                ->send();
+        }
+        if ($record->estado == 'rechazado') {
+            Notification::make()
+                ->title('Peticion Rechazada Satisfactoriamente')
+                ->success()
+                ->send();
+        }
+        if ($record->estado == 'completado') {
+            Notification::make()
+                ->title('Peticion Completada Satisfactoriamente')
+                ->success()
+                ->send();
+        }
+    }
+
+    public static function sendNotificationEmailRequestApproved($record)
+    {
+        $user = User::find($record->user_id);
+
+        $requestProductUnitsIds = $record->requestProductUnits;
+
+        $requestProductUnitsArray = [];
+
+        $requestProductUnitsArray['products'] = $requestProductUnitsIds->map(function ($productUnit) {
+            $pu = ProductUnit::find($productUnit->product_unit_id);
+
+            $data = [];
+
+            $data['unit_nombre'] = $pu->product->nombre;
+            $data['unit_marca'] = $pu->product->marca;
+            $data['unit_modelo'] = $pu->product->modelo;
+            $data['unit_codigo_inventario'] = $pu->codigo_inventario;
+            $data['unit_serie'] = $pu->serie;
+
+            return $data;
+        })->toArray();
+
+        $requestPath = RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal');
+
+        $requestProductUnitsArray['request_path'] = $requestPath;
+
+        NotificationEmail::send($user, new RequestApproved($requestProductUnitsArray));
+    }
+
+    public static function sendNotificationEmailRequestRejected($record, $rejectionReason)
+    {
+        $user = User::find($record->user_id);
+
+        $requestProductUnitsIds = $record->requestProductUnits;
+
+        $requestProductUnitsArray = [];
+
+        $requestProductUnitsArray['products'] = $requestProductUnitsIds->map(function ($productUnit) {
+            $pu = ProductUnit::find($productUnit->product_unit_id);
+
+            $data = [];
+
+            $data['unit_nombre'] = $pu->product->nombre;
+            $data['unit_marca'] = $pu->product->marca;
+            $data['unit_modelo'] = $pu->product->modelo;
+            $data['unit_codigo_inventario'] = $pu->codigo_inventario;
+            $data['unit_serie'] = $pu->serie;
+
+            return $data;
+        })->toArray();
+
+        $requestPath = RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal');
+
+        $requestProductUnitsArray['request_path'] = $requestPath;
+        $requestProductUnitsArray['rejection_reason'] = $rejectionReason;
+
+        NotificationEmail::send($user, new RequestRejected($requestProductUnitsArray));
+    }
+
+    public static function sendNotificationEmailRequestCompleted($record)
+    {
+        $user = User::find($record->user_id);
+
+        $requestProductUnitsIds = $record->requestProductUnits;
+
+        $requestProductUnitsArray = [];
+
+        $requestProductUnitsArray['products'] = $requestProductUnitsIds->map(function ($productUnit) {
+            $pu = ProductUnit::find($productUnit->product_unit_id);
+
+            $data = [];
+
+            $data['unit_nombre'] = $pu->product->nombre;
+            $data['unit_marca'] = $pu->product->marca;
+            $data['unit_modelo'] = $pu->product->modelo;
+            $data['unit_codigo_inventario'] = $pu->codigo_inventario;
+            $data['unit_serie'] = $pu->serie;
+
+            return $data;
+        })->toArray();
+
+        $requestPath = RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal');
+
+        $requestProductUnitsArray['request_path'] = $requestPath;
+
+        NotificationEmail::send($user, new RequestCompleted($requestProductUnitsArray));
     }
 }
