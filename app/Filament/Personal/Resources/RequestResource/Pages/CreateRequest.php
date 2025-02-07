@@ -5,12 +5,16 @@ namespace App\Filament\Personal\Resources\RequestResource\Pages;
 use App\Models\User;
 use Filament\Actions;
 use App\Models\ProductUnit;
+use Filament\Facades\Filament;
 use App\Models\RequestProductUnit;
-use Filament\Resources\Pages\CreateRecord;
-use App\Filament\Personal\Resources\RequestResource;
+use Illuminate\Support\Facades\Mail;
 use Filament\Notifications\Notification;
 use Filament\Notifications\Actions\Action;
-use Filament\Facades\Filament;
+use Filament\Resources\Pages\CreateRecord;
+use App\Filament\Personal\Resources\RequestResource;
+// use App\Mail\NewRequest;
+use Illuminate\Support\Facades\Notification as EmailNotification;
+use App\Notifications\NewRequest;
 
 class CreateRequest extends CreateRecord
 {
@@ -50,6 +54,8 @@ class CreateRequest extends CreateRecord
             $query->where('name', 'area_ti');
         })->get();
 
+        $requestPath = RequestResource::getUrl('edit', ['record' => $this->record->id], panel: 'areaTI');
+
         Notification::make()
             ->title(__('A Request Have Been Created'))
             ->icon('heroicon-o-clipboard-document')
@@ -58,9 +64,24 @@ class CreateRequest extends CreateRecord
                 Action::make('view')
                     ->label('View Request')
                     ->button()
-                    ->url(RequestResource::getUrl('edit', ['record' => $this->record->id], panel: 'areaTI')),
+                    ->url($requestPath),
                 // ->openUrlInNewTab(),
             ])
             ->sendToDatabase($recipients);
+
+        $products = [];
+
+        foreach ($this->data['requestProductUnits'] as $unitProduct) {
+            array_push($products, $unitProduct);
+        }
+
+        $data = array(
+            'products' => $products,
+            'user' => auth()->user(),
+            'request_path' => $requestPath,
+        );
+
+        EmailNotification::send($recipients, new NewRequest($data));
+        // Mail::to($recipients)->send(new NewRequest($data));
     }
 }
