@@ -19,6 +19,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Personal\Resources\RequestResource\Pages;
@@ -247,16 +248,18 @@ class RequestResource extends Resource
                     ])
             ])
             ->actions([
-                // Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
-                    ->visible(function ($record) {
-                        return ($record->estado == 'pendiente');
-                    })
-                    ->disabled(function ($record) {
-                        return !($record->estado == 'pendiente');
-                    })
-                    ->before(fn($record) => RequestResourceTrait::beforeDelete($record))
-                    ->after(fn($record) => RequestResourceTrait::afterDelete($record)),
+                ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\DeleteAction::make()
+                        ->visible(function ($record) {
+                            return ($record->estado == 'pendiente');
+                        })
+                        ->disabled(function ($record) {
+                            return !($record->estado == 'pendiente');
+                        })
+                        ->before(fn($record) => RequestResourceTrait::beforeDelete($record))
+                        ->after(fn($record) => RequestResourceTrait::afterDelete($record)),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -278,6 +281,7 @@ class RequestResource extends Resource
             'index' => Pages\ListRequests::route('/'),
             'create' => Pages\CreateRequest::route('/create'),
             'edit' => Pages\EditRequest::route('/{record}/edit'),
+            'view' => Pages\ViewRequest::route('/{record}'),
         ];
     }
 }

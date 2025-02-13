@@ -20,6 +20,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -396,7 +397,12 @@ class RequestResource extends Resource
                     ->modalCancelAction(fn(StaticAction $action) => $action->label('Cerrar'))
                     ->slideOver()
                     ->color('info'),
+
+                ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                ])
             ])
+            // ->recordUrl(fn($record) => null) // Desactiva el clic en la fila
 
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -418,6 +424,7 @@ class RequestResource extends Resource
             'index' => Pages\ListRequests::route('/'),
             'create' => Pages\CreateRequest::route('/create'),
             'edit' => Pages\EditRequest::route('/{record}/edit'),
+            'view' => Pages\ViewRequest::route('/{record}'),
         ];
     }
 }

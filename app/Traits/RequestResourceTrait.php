@@ -31,6 +31,10 @@ trait RequestResourceTrait
             }
         }
 
+        if (is_null($selectedProduct)) {
+            return;
+        }
+
         $availableQuantity = self::calculateAvailableQuantity($selectedProduct);
 
         $newAvailableQuantity = $availableQuantity - $counter;
@@ -106,7 +110,7 @@ trait RequestResourceTrait
     {
         // Obtener los productos y la cantidad solicitada
         $articles = $record->requestProductUnits->map(function ($requestProductUnit) {
-            $productName = $requestProductUnit->productUnit->product->nombre ?? 'Producto desconocido';
+            $productName = $requestProductUnit->productUnit->product()->withTrashed()->first()->nombre ?? 'Producto desconocido';
             return $productName;
         });
 
@@ -165,14 +169,14 @@ trait RequestResourceTrait
     {
         $recipient = User::where('id', $record->user_id)->get();
 
-        $state = match ($record->estado) {
-            'aceptado' => 'Accepted',
-            'rechazado' => 'Declined',
-            'completado' => 'Completed',
-        };
+        // $state = match ($record->estado) {
+        //     'aceptado' => 'Accepted',
+        //     'rechazado' => 'Declined',
+        //     'completado' => 'Completed',
+        // };
 
         Notification::make()
-            ->title(__("Your Request from " . $record->created_at->format('d/m/Y H:i') . " has been " . ucfirst($state)))
+            ->title(__("El estado de tu solicitud de la fecha " . $record->created_at->format('d/m/Y H:i') . " ha sido actualizado a " . ucfirst($record->estado)))
             ->icon('heroicon-o-clipboard-document')
             ->iconColor(match ($record->estado) {
                 'aceptado' => 'success',
@@ -182,9 +186,9 @@ trait RequestResourceTrait
             })
             ->actions([
                 Action::make('view')
-                    ->label('View Request')
+                    ->label('Ver Petición')
                     ->button()
-                    ->url(\App\Filament\AreaTI\Resources\RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal')),
+                    ->url(\App\Filament\AreaTI\Resources\RequestResource::getUrl('view', ['record' => $record->id], panel: 'personal')),
                 // ->openUrlInNewTab(),
             ])
             ->sendToDatabase($recipient);
@@ -231,7 +235,7 @@ trait RequestResourceTrait
             return $data;
         })->toArray();
 
-        $requestPath = RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal');
+        $requestPath = RequestResource::getUrl('view', ['record' => $record->id], panel: 'personal');
 
         $requestProductUnitsArray['request_path'] = $requestPath;
 
@@ -260,7 +264,7 @@ trait RequestResourceTrait
             return $data;
         })->toArray();
 
-        $requestPath = RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal');
+        $requestPath = RequestResource::getUrl('view', ['record' => $record->id], panel: 'personal');
 
         $requestProductUnitsArray['request_path'] = $requestPath;
         $requestProductUnitsArray['rejection_reason'] = $rejectionReason;
@@ -290,7 +294,7 @@ trait RequestResourceTrait
             return $data;
         })->toArray();
 
-        $requestPath = RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal');
+        $requestPath = RequestResource::getUrl('view', ['record' => $record->id], panel: 'personal');
 
         $requestProductUnitsArray['request_path'] = $requestPath;
 

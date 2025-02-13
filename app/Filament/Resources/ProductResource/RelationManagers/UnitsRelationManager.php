@@ -34,9 +34,7 @@ class UnitsRelationManager extends RelationManager
                     ->required()
                     ->options([
                         'disponible' => 'Disponible',
-                        'prestado' => 'Prestado',
                         'dañado' => 'Dañado',
-                        'reservado' => 'Reservado'
                     ])
                     ->default('disponible'),
 
@@ -79,7 +77,8 @@ class UnitsRelationManager extends RelationManager
                         'dañado' => 'danger',
                         'disponible' => 'success',
                         'reservado' => 'info',
-                    }),
+                    })
+                    ->tooltip(fn($record) => in_array($record->estado, ['reservado', 'prestado']) ? 'Los productos que se encuentren en estado reservado o prestado no pueden ser eliminado ni editados' : null),
                 Tables\Columns\TextColumn::make('descripcion_lugar')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('funcionario_responsable')
@@ -110,7 +109,9 @@ class UnitsRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->before(function ($record) {})
+                    ->disabled(fn($record) => in_array($record->estado, ['reservado', 'prestado'])),
                 Tables\Actions\DeleteAction::make()
                     ->after(function () {
 
@@ -118,7 +119,8 @@ class UnitsRelationManager extends RelationManager
 
                         $parentProduct->cantidad -= 1;
                         $parentProduct->save();
-                    }),
+                    })
+                    ->disabled(fn($record) => in_array($record->estado, ['reservado', 'prestado'])),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

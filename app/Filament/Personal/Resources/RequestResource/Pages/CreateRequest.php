@@ -54,15 +54,15 @@ class CreateRequest extends CreateRecord
             $query->where('name', 'area_ti');
         })->get();
 
-        $requestPath = RequestResource::getUrl('edit', ['record' => $this->record->id], panel: 'areaTI');
+        $requestPath = RequestResource::getUrl('view', ['record' => $this->record->id], panel: 'areaTI');
 
         Notification::make()
-            ->title(__('A Request Have Been Created'))
+            ->title(__('Una nueva petición ha sido creada'))
             ->icon('heroicon-o-clipboard-document')
             ->iconColor('warning')
             ->actions([
                 Action::make('view')
-                    ->label('View Request')
+                    ->label('Ver Petición')
                     ->button()
                     ->url($requestPath),
                 // ->openUrlInNewTab(),

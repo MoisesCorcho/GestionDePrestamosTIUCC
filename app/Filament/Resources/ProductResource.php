@@ -2,16 +2,17 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ProductResource\Pages;
-use App\Filament\Resources\ProductResource\RelationManagers;
-use App\Models\Product;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use App\Models\Product;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\ProductResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\ProductResource\RelationManagers;
 
 class ProductResource extends Resource
 {
@@ -29,6 +30,13 @@ class ProductResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('Products');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
     }
 
     public static function form(Form $form): Form
@@ -72,14 +80,45 @@ class ProductResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->before(function ($record) {
+
+                        $requestedUnits = $record->units->filter(function ($unit) {
+                            return $unit->estado === 'reservado';
+                        });
+
+                        if ($requestedUnits->isNotEmpty()) {
+
+                            // Unidades reservadas encontradas, impedir la eliminación y mostrar un error.
+                            Notification::make()
+                                ->title('Error')
+                                ->body('No se puede eliminar este elemento porque tiene unidades reservadas.')
+                                ->danger()
+                                ->send();
+
+
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                'error' => 'No se puede eliminar este elemento porque tiene unidades reservadas.',
+                            ]);
+                        } else {
+                            // Si no hay unidades reservadas, puedes enviar una notificación de éxito.
+
+                            Notification::make()
+                                ->title('Éxito')
+                                ->body('Elemento eliminado correctamente.')
+                                ->success()
+                                ->send();
+                        }
+                    }),
+                Tables\Actions\RestoreAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
