@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('country_id')->nullable()->constrained()->cascadeOnUpdate()->cascadeOnDelete();
-            $table->foreignId('state_id')->nullable()->constrained()->cascadeOnUpdate()->cascadeOnDelete();
-            $table->foreignId('city_id')->nullable()->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('country_id')->nullable()->constrained()->cascadeOnUpdate();
+            $table->foreignId('state_id')->nullable()->constrained()->cascadeOnUpdate();
+            $table->foreignId('city_id')->nullable()->constrained()->cascadeOnUpdate();
             $table->string('address')->nullable();
             $table->string('postal_code')->nullable();
         });

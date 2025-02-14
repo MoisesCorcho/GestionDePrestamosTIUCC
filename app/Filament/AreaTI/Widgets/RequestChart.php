@@ -15,7 +15,10 @@ class RequestChart extends ChartWidget
 
     public ?string $filter = 'month';
 
-    protected static ?string $heading = 'Peticiones Realizadas';
+    public function getHeading(): ?string
+    {
+        return __('Requests Made');
+    }
 
     protected static ?int $sort = 2;
 

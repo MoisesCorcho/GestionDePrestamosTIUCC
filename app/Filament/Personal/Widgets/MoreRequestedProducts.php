@@ -9,7 +9,10 @@ use Illuminate\Support\Facades\Auth;
 
 class MoreRequestedProducts extends ChartWidget
 {
-    protected static ?string $heading = 'Productos mas Solicitados';
+    public function getHeading(): ?string
+    {
+        return __('Most Requested Products');
+    }
 
     protected static ?int $sort = 4;
 

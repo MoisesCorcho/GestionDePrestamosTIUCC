@@ -241,7 +241,7 @@ class RequestResource extends Resource
                     ->label(__('Department'))
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('articulos_prestados')
-                    ->label('Artículos Prestados')
+                    ->label(__('Borrowed Items'))
                     ->getStateUsing(function ($record) {
 
                         return RequestResourceTrait::formatRequestedArticles($record);
@@ -251,17 +251,22 @@ class RequestResource extends Resource
                     ->color('primary'),
 
                 Tables\Columns\TextColumn::make('cantidad_solicitada')
+                    ->label(__('Requested Quantity'))
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('estado')
+                    ->label(__('State'))
                     ->badge()
                     ->color(fn(string $state): string => RequestResourceTrait::getStateColor($state))
-                    ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state)),
+                    ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state))
+                    ->formatStateUsing(fn(string $state): string => ucfirst(__($state))), // Traduce el estado,
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('Created At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('Updated At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

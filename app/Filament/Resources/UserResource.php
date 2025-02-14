@@ -50,6 +50,7 @@ class UserResource extends Resource
                             ->required(),
                         Forms\Components\TextInput::make('email')
                             ->label('Correo Electronico')
+                            ->disabled()
                             ->email()
                             ->required(),
                         Forms\Components\TextInput::make('password')
@@ -124,11 +125,18 @@ class UserResource extends Resource
 
                         Forms\Components\TextInput::make('address')
                             ->label('Dirección')
-                            ->required(),
+                            ->rules(['string', 'regex:/^[a-zA-Z0-9\s]+$/', 'min:4']) // Ejemplo: solo letras, números y espacios
+                            ->validationMessages([
+                                'regex' => 'El campo :attribute solo puede contener letras, números y espacios.',
+                                'min' => 'El campo :attribute debe tener al menos 4 caracteres.',
+                            ]),
 
                         Forms\Components\TextInput::make('postal_code')
                             ->label('Codigo Postal')
-                            ->required(),
+                            ->rules(['numeric'])
+                            ->validationMessages([
+                                'numeric' => 'El campo :attribute solo puede contener números.',
+                            ]),
 
 
                     ])

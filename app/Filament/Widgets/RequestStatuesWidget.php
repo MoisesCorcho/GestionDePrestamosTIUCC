@@ -8,7 +8,10 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class RequestStatuesWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Numero de Peticiones por Tipo';
+    public function getHeading(): ?string
+    {
+        return __('Number of Requests by Type');
+    }
 
     protected static ?int $sort = 4;
 
@@ -26,7 +29,7 @@ class RequestStatuesWidget extends ChartWidget
                     'data' => [$acceptedRequest, $rejectedRequest, $completedRequest, $pendingRequest],
                 ],
             ],
-            'labels' => ['Aceptado', 'Rechazado', 'Completado', 'Pendiente'],
+            'labels' => [__('aceptado'), __('rechazado'), __('completado'), __('pendiente')],
         ];
     }
 

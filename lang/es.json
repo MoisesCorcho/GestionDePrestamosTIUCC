@@ -40,5 +40,22 @@
     "Stock Code": "Codigo Inventario",
     "Series": "Serie",
 
-    "You must add at least one product": "Debes añadir al menos un producto"
+    "You must add at least one product": "Debes añadir al menos un producto",
+
+    "Most Requested Products": "Productos mas Solicitados",
+    "Number of Requests by Type": "Numero de Peticiones por Tipo",
+    "Total de Peticiones Realizadas": "Total Requests Made",
+    "Time since last request without response": "Tiempo desde última petición sin respuesta",
+    "Product Availability": "Disponibilidad de Productos",
+    "Requests Made": "Peticiones Realizadas",
+    "Requests by Department": "Solicitudes por Departamento",
+    "Users with the most requests": "Usuarios Con Mas Peticiones",
+    "Total Requests Made": "Total de Peticiones Realizadas",
+    "Average Resolution Time": "Tiempo promedio de resolución",
+    "Time since last unresolved request": "Tiempo desde última petición sin resolver",
+
+    "borrowed": "Prestado",
+    "damaged": "Dañado",
+    "available": "Disponible",
+    "reserved": "Reservado"
 }

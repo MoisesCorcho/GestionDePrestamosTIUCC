@@ -16,9 +16,9 @@ class StatsOverview extends BaseWidget
     protected function getStats(): array
     {
         return [
-            Stat::make('Total de Peticiones Realizadas', $this->getAllRequests()),
+            Stat::make(__('Total Requests Made'), $this->getAllRequests()),
 
-            Stat::make('Tiempo desde última petición sin respuesta', $this->timeSinceLastPendingRequest()),
+            Stat::make(__('Time since last request without response'), $this->timeSinceLastPendingRequest()),
 
             // Stat::make('Tiempo promedio de resolución', $this->avgResponseTime()),
         ];

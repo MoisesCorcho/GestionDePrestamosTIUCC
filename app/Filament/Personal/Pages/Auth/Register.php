@@ -68,6 +68,20 @@ class Register extends BaseRegister
         ];
     }
 
+    protected function getNameFormComponent(): Component
+    {
+        return TextInput::make('name')
+            ->label(__('filament-panels::pages/auth/register.form.name.label'))
+            ->required()
+            ->rules(['required', 'string', 'regex:/^[a-zA-Z0-9\s]+$/', 'min:4']) // Ejemplo: solo letras, números y espacios
+            ->validationMessages([
+                'regex' => 'El campo :attribute solo puede contener letras, números y espacios.',
+                'min' => 'El campo :attribute debe tener al menos 4 caracteres.',
+            ])
+            ->maxLength(255)
+            ->autofocus();
+    }
+
     protected function getCountryFormComponent(): Component
     {
         return Select::make('country_id')
@@ -126,13 +140,22 @@ class Register extends BaseRegister
     protected function getAddressFormComponent(): Component
     {
         return TextInput::make('address')
-            ->label(__('Address'));
+            ->label(__('Address'))
+            ->rules(['string', 'regex:/^[a-zA-Z0-9\s]+$/', 'min:4']) // Ejemplo: solo letras, números y espacios
+            ->validationMessages([
+                'regex' => 'El campo :attribute solo puede contener letras, números y espacios.',
+                'min' => 'El campo :attribute debe tener al menos 4 caracteres.',
+            ]);
     }
 
     protected function getPostalCodeFormComponent(): Component
     {
         return TextInput::make('postal_code')
-            ->label(__('Postal Code'));
+            ->label(__('Postal Code'))
+            ->rules(['numeric'])
+            ->validationMessages([
+                'numeric' => 'El campo :attribute solo puede contener números.',
+            ]);
     }
 
     protected function getPositionFormComponent(): Component

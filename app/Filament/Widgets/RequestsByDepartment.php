@@ -8,7 +8,10 @@ use App\Models\Department;
 
 class RequestsByDepartment extends ChartWidget
 {
-    protected static ?string $heading = 'Solicitudes por Departamento';
+    public function getHeading(): ?string
+    {
+        return __('Requests by Department');
+    }
 
     protected static ?int $sort = 6;
 

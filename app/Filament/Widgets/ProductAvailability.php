@@ -10,13 +10,12 @@ use Illuminate\Support\Facades\DB;
 
 class ProductAvailability extends BaseWidget
 {
-    protected static ?string $heading = 'Disponibilidad de Productos';
-
-    // protected int | string | array $columnSpan = '2/3';
+    public function getHeading(): ?string
+    {
+        return __('Product Availability');
+    }
 
     protected static ?int $sort = 5;
-
-    // protected static ?string $height = '200px';
 
     public function table(Table $table): Table
     {
@@ -55,24 +54,24 @@ class ProductAvailability extends BaseWidget
             )
             ->columns([
                 Tables\Columns\TextColumn::make('nombre')
-                    ->label('Producto')
+                    ->label(__('Product'))
                     ->sortable()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('prestado')
-                    ->label('Prestado')
+                    ->label(__('borrowed'))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('dañado')
-                    ->label('Dañado')
+                    ->label(__('damaged'))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('disponible')
-                    ->label('Disponible')
+                    ->label(__('available'))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('reservado')
-                    ->label('Reservado')
+                    ->label(__('reserved'))
                     ->sortable(),
             ])
             ->paginated(5) // Limita los elementos por página

@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\DB;
 
 class UsersRequestWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Usuarios Con Mas Peticiones';
+    public function getHeading(): ?string
+    {
+        return __('Users with the most requests');
+    }
 
     protected function getData(): array
     {

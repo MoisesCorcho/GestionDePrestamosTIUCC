@@ -109,8 +109,18 @@ trait RequestResourceTrait
     public static function formatRequestedArticles($record)
     {
         // Obtener los productos y la cantidad solicitada
+        // $articles = $record->requestProductUnits->map(function ($requestProductUnit) {
+        //     $productName = $requestProductUnit->productUnit->product()->withTrashed()->first()->nombre ?? 'Producto desconocido';
+        //     return $productName;
+        // });
+
         $articles = $record->requestProductUnits->map(function ($requestProductUnit) {
-            $productName = $requestProductUnit->productUnit->product()->withTrashed()->first()->nombre ?? 'Producto desconocido';
+            //withTrashed() para incluir registros eliminados
+            $productUnit = $requestProductUnit->productUnit()->withTrashed()->first();
+
+            //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+            $productName = $productUnit ? $productUnit->product()->withTrashed()->first()->nombre ?? 'Producto desconocido' : 'Producto desconocido';
+
             return $productName;
         });
 

@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\Auth;
 
 class RequestStatuesWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Numero de Peticiones por Tipo';
+    public function getHeading(): ?string
+    {
+        return __('Number of Requests by Type');
+    }
 
     protected static ?int $sort = 4;
 

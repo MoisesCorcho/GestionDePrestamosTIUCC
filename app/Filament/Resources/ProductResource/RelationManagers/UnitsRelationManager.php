@@ -15,6 +15,13 @@ class UnitsRelationManager extends RelationManager
 {
     protected static string $relationship = 'units';
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+    }
+
     public function form(Form $form): Form
     {
         return $form
@@ -96,7 +103,8 @@ class UnitsRelationManager extends RelationManager
                         'dañado' => 'Dañado',
                         'disponible' => 'Disponible',
                         'reservado' => 'Reservado',
-                    ])
+                    ]),
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
@@ -121,6 +129,7 @@ class UnitsRelationManager extends RelationManager
                         $parentProduct->save();
                     })
                     ->disabled(fn($record) => in_array($record->estado, ['reservado', 'prestado'])),
+                Tables\Actions\RestoreAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
