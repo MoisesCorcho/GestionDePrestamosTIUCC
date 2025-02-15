@@ -165,31 +165,44 @@ class RequestResource extends Resource
                                     ->disabled()
                                     ->label(__('Name'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->nombre ?? 0;
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->nombre ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_marca')
                                     ->disabled()
                                     ->label(__('Brand'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->marca ?? 0;
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->marca ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_modelo')
                                     ->disabled()
                                     ->label(__('Model'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->modelo ?? 0;
+
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->modelo ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_codigo_inventario')
                                     ->disabled()
                                     ->label(__('Stock Code'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->codigo_inventario ?? 0;
+                                        return $record->productUnit()->withTrashed()->first()->codigo_inventario ?? ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_serie')
                                     ->disabled()
                                     ->label(__('Series'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->serie ?? 0;
+                                        return $record->productUnit()->withTrashed()->first()->codigo_inventario ?? ' ';
                                     }),
 
                                 Hidden::make('product_unit_id')

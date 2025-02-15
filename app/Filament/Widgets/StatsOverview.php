@@ -43,10 +43,8 @@ class StatsOverview extends BaseWidget
         $requests = \App\Models\RequestLog::query()
             ->whereIn('estado', ['pendiente', 'aceptado', 'rechazado'])
             ->groupBy('request_id')
-            ->selectRaw('request_id, MAX(CASE WHEN estado = "pendiente" THEN created_at END) as created_at_pendiente, MAX(CASE WHEN estado = "aceptado" OR estado = "rechazado" THEN created_at END) as created_at_final')
+            ->selectRaw('request_id, MIN(CASE WHEN estado = "pendiente" THEN created_at END) as created_at_pendiente, MIN(CASE WHEN estado = "aceptado" OR estado = "rechazado" THEN created_at END) as created_at_final')
             ->get();
-
-        // dd($requests);
 
         // Calculamos la diferencia de tiempo para cada solicitud y obtenemos el promedio
         $responseTimes = $requests->map(function ($request) {

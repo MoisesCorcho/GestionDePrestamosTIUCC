@@ -50,7 +50,7 @@ class UserResource extends Resource
                             ->required(),
                         Forms\Components\TextInput::make('email')
                             ->label('Correo Electronico')
-                            ->disabled()
+                            ->disabled(fn($record) => $record !== null)
                             ->email()
                             ->required(),
                         Forms\Components\TextInput::make('password')
