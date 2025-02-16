@@ -29,6 +29,8 @@ class PersonalPanelProvider extends PanelProvider
             ->path('personal')
             ->registration(Register::class)
             ->login()
+            ->profile()
+            ->passwordReset()
             ->colors([
                 'primary' => Color::Green,
             ])

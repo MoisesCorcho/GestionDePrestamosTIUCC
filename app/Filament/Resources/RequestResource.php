@@ -41,11 +41,6 @@ class RequestResource extends Resource
         return __('Requests');
     }
 
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->orderBy('created_at', 'desc');
-    }
-
     public static function getNavigationBadgeColor(): ?string
     {
         return static::getModel()::where('estado', 'pendiente')->count() > 1 ? 'danger' : 'warning';
@@ -293,7 +288,8 @@ class RequestResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array

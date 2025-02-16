@@ -46,7 +46,7 @@ class RequestResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('user_id', Auth::user()->id)->orderBy('created_at', 'desc');
+        return parent::getEloquentQuery()->where('user_id', Auth::user()->id);
     }
 
     public static function form(Form $form): Form
@@ -283,7 +283,8 @@ class RequestResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     // Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array

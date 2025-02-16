@@ -27,6 +27,8 @@ class AreaTIPanelProvider extends PanelProvider
             ->id('areaTI')
             ->path('areaTI')
             ->login()
+            ->profile()
+            ->passwordReset()
             ->colors([
                 'primary' => Color::Blue,
             ])
