@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('codigo_inventario')->nullable(); // Código de inventario
             $table->string('serie')->nullable(); // Número de serie
             $table->enum('estado', ['prestado', 'dañado', 'disponible', 'reservado'])->default('disponible');
+            $table->text('descripcion_averia')->nullable();
             $table->string('descripcion_lugar')->nullable(); // Ubicación específica
             $table->string('funcionario_responsable')->nullable(); // Responsable del activo
             $table->date('fecha_asignacion')->nullable(); // Fecha de asignación

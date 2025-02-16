@@ -105,6 +105,9 @@ class RequestsSeeder extends Seeder
                     'created_at' => $fechaCambioEstado,
                     'updated_at' => $fechaCambioEstado,
                 ]);
+
+                // Marcar las unidades como "disponible" nuevamente
+                ProductUnit::whereIn('id', $selectedUnits)->update(['estado' => 'disponible']);
             }
 
             if ($estadoFinal === 'aceptado') {

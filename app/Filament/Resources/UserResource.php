@@ -52,6 +52,7 @@ class UserResource extends Resource
                             ->label('Correo Electronico')
                             ->disabled(fn($record) => $record !== null)
                             ->email()
+                            ->unique()
                             ->required(),
                         Forms\Components\TextInput::make('password')
                             ->label('Contraseña')
@@ -65,12 +66,16 @@ class UserResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('position_id')
                             ->relationship(name: 'position', titleAttribute: 'nombre')
-                            ->label('Position')
+                            ->label('Posicion')
+                            ->searchable()
+                            ->preload()
                             ->required(),
 
                         Forms\Components\Select::make('department_id')
                             ->relationship(name: 'department', titleAttribute: 'nombre')
                             ->label('Area')
+                            ->searchable()
+                            ->preload()
                             ->required(),
 
                         Forms\Components\Select::make('roles')

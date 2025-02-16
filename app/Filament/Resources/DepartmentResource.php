@@ -19,7 +19,6 @@ class DepartmentResource extends Resource
     protected static ?string $navigationGroup = 'Gestión de usuarios';
     protected static ?int $navigationSort = 8;
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
-    // protected static ?string $navigationLabel = 'Areas';
 
     // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
     public static function getModelLabel(): string
@@ -33,12 +32,20 @@ class DepartmentResource extends Resource
         return __('Departments');
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\TextInput::make('nombre')
                     ->required()
+                    ->unique()
                     ->maxLength(255),
             ]);
     }
@@ -59,10 +66,11 @@ class DepartmentResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\RestoreAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -19,7 +19,6 @@ class PositionResource extends Resource
     protected static ?string $navigationGroup = 'Gestión de usuarios';
     protected static ?int $navigationSort = 8;
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';
-    // protected static ?string $navigationLabel = 'Rol/Cargo';
 
     // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
     public static function getModelLabel(): string
@@ -33,12 +32,20 @@ class PositionResource extends Resource
         return __('Positions');
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\TextInput::make('nombre')
                     ->required()
+                    ->unique()
                     ->maxLength(255),
             ]);
     }
@@ -59,10 +66,11 @@ class PositionResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\RestoreAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
