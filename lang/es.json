@@ -51,8 +51,9 @@
     "Requests by Department": "Solicitudes por Departamento",
     "Users with the most requests": "Usuarios Con Mas Peticiones",
     "Total Requests Made": "Total de Peticiones Realizadas",
-    "Average Resolution Time": "Tiempo promedio de resolución",
-    "Time since last unresolved request": "Tiempo desde última petición sin resolver",
+    "Average Resolution Time": "Tiempo Promedio de Resolución De Solicitudes",
+    "Time since last unresolved request": "Tiempo Desde Última Petición sin Resolver",
+    "Average Product Return Time": "Tiempo Promedio de Devolución de Productos",
 
     "borrowed": "Prestado",
     "damaged": "Dañado",

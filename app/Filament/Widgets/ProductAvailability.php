@@ -10,9 +10,11 @@ use Illuminate\Support\Facades\DB;
 
 class ProductAvailability extends BaseWidget
 {
-    public function getHeading(): ?string
+    protected static ?string $heading = null;
+
+    public function __construct()
     {
-        return __('Product Availability');
+        static::$heading = __('Product Availability');
     }
 
     protected static ?int $sort = 5;
