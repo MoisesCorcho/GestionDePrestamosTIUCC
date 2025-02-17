@@ -14,17 +14,18 @@ use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use Illuminate\Support\Collection;
 use Filament\Forms\Components\Section;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\UserResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\UserResource\RelationManagers;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
     protected static ?string $navigationGroup = 'Gestión de usuarios';
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
-    // protected static ?string $navigationLabel = 'Usuarios';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('User Management');
+    }
 
     // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
     public static function getModelLabel(): string
@@ -52,7 +53,7 @@ class UserResource extends Resource
                             ->label('Correo Electronico')
                             ->disabled(fn($record) => $record !== null)
                             ->email()
-                            ->unique()
+                            ->unique(ignoreRecord: true)
                             ->required(),
                         Forms\Components\TextInput::make('password')
                             ->label('Contraseña')

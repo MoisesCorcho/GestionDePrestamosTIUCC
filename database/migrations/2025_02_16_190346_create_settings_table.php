@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
+            $table->enum('dia', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
             $table->time('hora_apertura')->default('08:00');
             $table->time('hora_cierre')->default('19:00');
             $table->time('hora_solicitudes_apertura')->default('08:00');

@@ -17,6 +17,8 @@
     "State": "Estado",
     "Users": "Usuarios",
     "User": "Usuario",
+    "Time Setting": "Configuración de Horario",
+    "Time Settings": "Configuraciones de Horario",
 
     "Pending": "Pendiente",
     "Accepted": "Aceptado",
@@ -58,5 +60,27 @@
     "borrowed": "Prestado",
     "damaged": "Dañado",
     "available": "Disponible",
-    "reserved": "Reservado"
+    "reserved": "Reservado",
+
+    "Day": "Día",
+    "monday": "Lunes",
+    "tuesday": "Martes",
+    "wednesday": "Miércoles",
+    "thursday": "Jueves",
+    "friday": "Viernes",
+    "saturday": "Sábado",
+    "sunday": "Domingo",
+    "Service Hours": "Horario de Servicio",
+    "Operating Hours": "Horario de Atención",
+    "Set the times when the service is open": "Establezca las horas en que el servicio está abierto",
+    "Request Submission Hours": "Horario de Envío de Solicitudes",
+    "Set the times when users can submit requests": "Establezca las horas en que los usuarios pueden enviar solicitudes",
+    "Define the times when the service is available": "Define los horarios en los que el servicio está disponible",
+    "Opening Time": "Hora de Apertura",
+    "Closing Time": "Hora de Cierre",
+    "Request Opening Time": "Hora de Apertura de Solicitudes",
+    "Request Closing Time": "Hora de Cierre de Solicitudes",
+
+    "System Management": "Configuración del Sistema",
+    "User Management": "Gestión de Usuarios"
 }

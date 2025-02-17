@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PositionResource\Pages;
-use App\Filament\Resources\PositionResource\RelationManagers;
 use App\Models\Position;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -16,9 +15,13 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class PositionResource extends Resource
 {
     protected static ?string $model = Position::class;
-    protected static ?string $navigationGroup = 'Gestión de usuarios';
     protected static ?int $navigationSort = 8;
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('User Management');
+    }
 
     // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
     public static function getModelLabel(): string
