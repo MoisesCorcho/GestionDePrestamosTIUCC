@@ -13,6 +13,7 @@
         "bezhansalleh/filament-shield": "^3.3",
         "filament/filament": "^3.2",
         "flowframe/laravel-trend": "^0.3.0",
+        "laravel-lang/common": "^6.5",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
         "shanerbaner82/panel-roles": "^0.0.3",

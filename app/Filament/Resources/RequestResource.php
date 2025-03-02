@@ -26,7 +26,6 @@ class RequestResource extends Resource
 
     protected static ?string $model = Request::class;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document';
-    // protected static ?string $navigationLabel = 'Peticiones';
 
     // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
     public static function getModelLabel(): string
@@ -230,6 +229,7 @@ class RequestResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
+                    ->label(__('User'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('articulos_prestados')
