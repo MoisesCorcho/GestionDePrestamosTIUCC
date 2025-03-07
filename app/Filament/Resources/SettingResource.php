@@ -91,6 +91,22 @@ class SettingResource extends Resource
                                     ->seconds(false),
                             ])
                             ->columns(2),
+
+                        Section::make(__('Break Hours'))
+                            ->description(__('Set the times for break periods'))
+                            ->schema([
+                                TimePicker::make('descanso_inicio')
+                                    ->label(__('Break Start Time'))
+                                    ->nullable()
+                                    ->before('descanso_fin')
+                                    ->seconds(false),
+                                TimePicker::make('descanso_fin')
+                                    ->label(__('Break End Time'))
+                                    ->nullable()
+                                    ->after('descanso_inicio')
+                                    ->seconds(false),
+                            ])
+                            ->columns(2),
                     ])
                     ->columns(2),
 
@@ -113,6 +129,10 @@ class SettingResource extends Resource
                     ->label(__('Request Opening Time')),
                 Tables\Columns\TextColumn::make('hora_solicitudes_cierre')
                     ->label(__('Request Closing Time')),
+                Tables\Columns\TextColumn::make('descanso_inicio')
+                    ->label(__('Break Start Time')),
+                Tables\Columns\TextColumn::make('descanso_fin')
+                    ->label(__('Break End Time')),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

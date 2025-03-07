@@ -18,6 +18,8 @@ return new class extends Migration
             $table->time('hora_cierre')->default('19:00');
             $table->time('hora_solicitudes_apertura')->default('08:00');
             $table->time('hora_solicitudes_cierre')->default('19:00');
+            $table->time('descanso_inicio')->nullable();
+            $table->time('descanso_fin')->nullable();
             $table->timestamps();
         });
     }

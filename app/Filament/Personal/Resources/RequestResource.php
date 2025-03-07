@@ -112,6 +112,7 @@ class RequestResource extends Resource
                         Forms\Components\Select::make('estado')
                             ->label(__('State'))
                             ->live()
+                            ->visible(fn($record) => $record !== null) // No visible si estamos en creacion
                             ->disabled(true) // Desactivado si estamos en creacion
                             ->dehydrated(true) // Esto evita que el campo se intente guardar en la base de datos
                             ->default('pendiente')

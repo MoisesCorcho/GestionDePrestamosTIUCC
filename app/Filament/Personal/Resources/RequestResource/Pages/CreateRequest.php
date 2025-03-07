@@ -12,6 +12,8 @@ use Filament\Notifications\Notification;
 use Filament\Notifications\Actions\Action;
 use Filament\Resources\Pages\CreateRecord;
 use App\Filament\Personal\Resources\RequestResource;
+use App\Models\Setting;
+use Illuminate\Support\Carbon;
 // use App\Mail\NewRequest;
 use Illuminate\Support\Facades\Notification as EmailNotification;
 use App\Notifications\NewRequest;
@@ -30,7 +32,59 @@ class CreateRequest extends CreateRecord
 
     protected function beforeCreate()
     {
-        // return dd($this->data);
+        $now = Carbon::now();
+        $dayOfWeek = strtolower($now->englishDayOfWeek);
+
+        $setting = Setting::where('dia', $dayOfWeek)->first();
+
+        if (!$setting) {
+            Notification::make()
+                ->title(__('Schedule not configured for today'))
+                ->danger()
+                ->send();
+            $this->halt();
+            return;
+        }
+
+        $requestOpeningTime = Carbon::parse($setting->hora_solicitudes_apertura);
+        $requestClosingTime = Carbon::parse($setting->hora_solicitudes_cierre);
+        $openingTime = Carbon::parse($setting->hora_apertura);
+        $breakStartTime = $setting->descanso_inicio ? Carbon::parse($setting->descanso_inicio) : null;
+        $breakEndTime = $setting->descanso_fin ? Carbon::parse($setting->descanso_fin) : null;
+
+        // Calcular la diferencia de tiempo en minutos
+        $timeDifference = $openingTime->diffInMinutes($requestOpeningTime);
+
+        if ($now->lessThan($requestOpeningTime) || $now->greaterThan($requestClosingTime)) {
+            Notification::make()
+                ->title(__('Outside request submission hours'))
+                ->body(__('Request submission hours are from :opening to :closing', [
+                    'opening' => $requestOpeningTime->format('H:i'),
+                    'closing' => $requestClosingTime->format('H:i'),
+                ]))
+                ->danger()
+                ->send();
+            $this->halt();
+            return;
+        }
+
+        if ($breakStartTime && $breakEndTime) {
+            // Ajustar el horario de descanso
+            $adjustedBreakStartTime = $breakStartTime->clone()->subMinutes($timeDifference);
+
+            if ($now->greaterThanOrEqualTo($adjustedBreakStartTime) && $now->lessThan($breakEndTime)) {
+                Notification::make()
+                    ->title(__('Break time'))
+                    ->body(__('Break time is from :start to :end', [
+                        'start' => $adjustedBreakStartTime->format('H:i'),
+                        'end' => $breakEndTime->format('H:i'),
+                    ]))
+                    ->danger()
+                    ->send();
+                $this->halt();
+                return;
+            }
+        }
     }
 
     protected function afterCreate(): void

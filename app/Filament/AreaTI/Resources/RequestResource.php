@@ -295,6 +295,9 @@ class RequestResource extends Resource
                     ->disabled(function ($record) {
                         // El boton de aceptar solo estará activo para request en estado pendiente
                         return !($record->estado == 'pendiente');
+
+                        // Validar horarios de atención y descanso
+                        return !RequestResourceTrait::isRequestWithinSchedule($record);
                     })
                     ->visible(function ($record) {
                         // El boton de aceptar solo estará visible para request en estado pendiente

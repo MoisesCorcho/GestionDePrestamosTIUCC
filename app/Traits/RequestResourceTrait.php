@@ -2,18 +2,20 @@
 
 namespace App\Traits;
 
+use Carbon\Carbon;
 use App\Models\User;
+use App\Models\Setting;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use App\Models\ProductUnit;
 use App\Notifications\NewRequest;
 use App\Notifications\RequestApproved;
+use App\Notifications\RequestRejected;
+use App\Notifications\RequestCompleted;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Notifications\Actions\Action;
 use App\Filament\Personal\Resources\RequestResource;
-use App\Notifications\RequestCompleted;
-use App\Notifications\RequestRejected;
 use Illuminate\Support\Facades\Notification as NotificationEmail;
 
 trait RequestResourceTrait
@@ -60,6 +62,14 @@ trait RequestResourceTrait
 
         foreach ($selectedProducts as $selectedProduct) {
             array_push($selectedProductsID, $selectedProduct['product_unit_id']);
+        }
+
+        if ($get('general_product')) {
+            if (self::calculateAvailableQuantity($get('general_product')) == 0) {
+                return [
+                    '' => __('There are no available products')
+                ];
+            }
         }
 
         return ProductUnit::query()
@@ -309,5 +319,41 @@ trait RequestResourceTrait
         $requestProductUnitsArray['request_path'] = $requestPath;
 
         NotificationEmail::send($user, new RequestCompleted($requestProductUnitsArray));
+    }
+
+    public static function isRequestWithinSchedule($record): bool
+    {
+        $now = Carbon::now();
+        $dayOfWeek = strtolower($now->englishDayOfWeek);
+
+        $setting = Setting::where('dia', $dayOfWeek)->first();
+
+        if (!$setting) {
+            return false; // Deshabilitar si no hay configuración para hoy
+        }
+
+        $requestOpeningTime = Carbon::parse($setting->hora_solicitudes_apertura);
+        $requestClosingTime = Carbon::parse($setting->hora_solicitudes_cierre);
+        $openingTime = Carbon::parse($setting->hora_apertura);
+        $breakStartTime = $setting->descanso_inicio ? Carbon::parse($setting->descanso_inicio) : null;
+        $breakEndTime = $setting->descanso_fin ? Carbon::parse($setting->descanso_fin) : null;
+
+        // Calcular la diferencia de tiempo en minutos
+        $timeDifference = $openingTime->diffInMinutes($requestOpeningTime);
+
+        if ($now->lessThan($requestOpeningTime) || $now->greaterThan($requestClosingTime)) {
+            return false; // Deshabilitar si está fuera del horario de solicitudes
+        }
+
+        if ($breakStartTime && $breakEndTime) {
+            // Ajustar el horario de descanso
+            $adjustedBreakStartTime = $breakStartTime->clone()->subMinutes($timeDifference);
+
+            if ($now->greaterThanOrEqualTo($adjustedBreakStartTime) && $now->lessThan($breakEndTime)) {
+                return false; // Deshabilitar si está en horario de descanso
+            }
+        }
+
+        return true; // Habilitar si está dentro del horario
     }
 }
