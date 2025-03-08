@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ProductResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Tables;
+use Filament\Forms\Get;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Tables\Filters\SelectFilter;
@@ -14,6 +15,13 @@ use Filament\Resources\RelationManagers\RelationManager;
 class UnitsRelationManager extends RelationManager
 {
     protected static string $relationship = 'units';
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+    }
 
     public function form(Form $form): Form
     {
@@ -32,13 +40,17 @@ class UnitsRelationManager extends RelationManager
                 Forms\Components\Select::make('estado')
                     ->label('Estado')
                     ->required()
+                    ->live()
                     ->options([
                         'disponible' => 'Disponible',
-                        'prestado' => 'Prestado',
                         'dañado' => 'Dañado',
-                        'reservado' => 'Reservado'
                     ])
                     ->default('disponible'),
+
+                Forms\Components\Textarea::make('descripcion_averia')
+                    ->columnSpanFull()
+                    ->required(fn(Get $get) => $get('estado') === 'dañado')
+                    ->hidden(fn(Get $get) => $get('estado') !== 'dañado'),
 
                 Forms\Components\TextInput::make('descripcion_lugar')
                     ->label('Descripción del Lugar')
@@ -55,7 +67,6 @@ class UnitsRelationManager extends RelationManager
                     ->nullable()
                     ->displayFormat('Y-m-d')
                     ->weekStartsOnMonday(),
-
             ]);
     }
 
@@ -67,9 +78,11 @@ class UnitsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('codigo_inventario')
                     ->searchable()
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('serie')
                     ->searchable()
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('estado')
                     ->searchable()
                     ->sortable()
@@ -79,12 +92,16 @@ class UnitsRelationManager extends RelationManager
                         'dañado' => 'danger',
                         'disponible' => 'success',
                         'reservado' => 'info',
-                    }),
+                    })
+                    ->tooltip(fn($record) => in_array($record->estado, ['reservado', 'prestado']) ? 'Los productos que se encuentren en estado reservado o prestado no pueden ser eliminado ni editados' : null),
+
                 Tables\Columns\TextColumn::make('descripcion_lugar')
                     ->searchable(),
+
                 Tables\Columns\TextColumn::make('funcionario_responsable')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('fecha_asignacion')
                     ->searchable()
                     ->sortable()
@@ -97,7 +114,8 @@ class UnitsRelationManager extends RelationManager
                         'dañado' => 'Dañado',
                         'disponible' => 'Disponible',
                         'reservado' => 'Reservado',
-                    ])
+                    ]),
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
@@ -110,7 +128,9 @@ class UnitsRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->before(function ($record) {})
+                    ->disabled(fn($record) => in_array($record->estado, ['reservado', 'prestado'])),
                 Tables\Actions\DeleteAction::make()
                     ->after(function () {
 
@@ -118,7 +138,9 @@ class UnitsRelationManager extends RelationManager
 
                         $parentProduct->cantidad -= 1;
                         $parentProduct->save();
-                    }),
+                    })
+                    ->disabled(fn($record) => in_array($record->estado, ['reservado', 'prestado'])),
+                Tables\Actions\RestoreAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

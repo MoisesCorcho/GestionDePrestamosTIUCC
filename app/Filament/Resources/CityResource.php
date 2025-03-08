@@ -3,23 +3,23 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CityResource\Pages;
-use App\Filament\Resources\CityResource\RelationManagers;
 use App\Models\City;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CityResource extends Resource
 {
     protected static ?string $model = City::class;
-    protected static ?string $navigationGroup = 'Gestión del sistema';
     protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
     protected static ?int $navigationSort = 4;
-    // protected static ?string $navigationLabel = 'Ciudades';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('System Management');
+    }
 
     // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
     public static function getModelLabel(): string
@@ -32,7 +32,6 @@ class CityResource extends Resource
     {
         return __('Cities');
     }
-
 
     public static function form(Form $form): Form
     {

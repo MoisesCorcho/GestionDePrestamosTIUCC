@@ -30,6 +30,34 @@ class UserSeeder extends Seeder
                 'position' => 'ESTUDIANTE',
                 'department' => 'PROGRAMA DE INGENIERÍA DE SISTEMAS',
             ],
+            [
+                'name' => 'Omar Doria',
+                'email' => 'omar.doria@campussucc.edu.co',
+                'password' => bcrypt('password'),
+                'position' => 'ESTUDIANTE',
+                'department' => 'PROGRAMA DE DERECHO',
+            ],
+            [
+                'name' => 'Pedro Pinto',
+                'email' => 'pedro.pinto@campussucc.edu.co',
+                'password' => bcrypt('password'),
+                'position' => 'PROFESOR CATEDRATICO',
+                'department' => 'PROGRAMA DE CONTADURÍA PÚBLICA',
+            ],
+            [
+                'name' => 'Alvaro Hernandez',
+                'email' => 'alvaro.hernandez@campussucc.edu.co',
+                'password' => bcrypt('password'),
+                'position' => 'PROFESOR CATEDRATICO',
+                'department' => 'PROGRAMA DE PSICOLOGÍA',
+            ],
+            [
+                'name' => 'Roberto Palma',
+                'email' => 'roberto.palma@campussucc.edu.co',
+                'password' => bcrypt('password'),
+                'position' => 'AUXILIAR',
+                'department' => 'OFICINA DE MERCADEO',
+            ],
         ];
 
         foreach ($users as $user) {
@@ -42,9 +70,9 @@ class UserSeeder extends Seeder
                 'password' => $user['password'],
                 'position_id' => $positionId,
                 'department_id' => $departmentId,
-                'country_id' => 48,
-                'state_id' => 2898,
-                'city_id' => 20558
+                'country_id' => null,
+                'state_id' => null,
+                'city_id' => null
             ]);
         }
 
@@ -57,9 +85,9 @@ class UserSeeder extends Seeder
             'password' => bcrypt('password'),
             'position_id' => $positionId,
             'department_id' => $departmentId,
-            'country_id' => 48,
-            'state_id' => 2898,
-            'city_id' => 20558
+            'country_id' => null,
+            'state_id' => null,
+            'city_id' => null
         ]);
     }
 }

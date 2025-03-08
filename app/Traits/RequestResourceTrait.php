@@ -2,19 +2,24 @@
 
 namespace App\Traits;
 
+use Carbon\Carbon;
 use App\Models\User;
+use App\Models\Setting;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use App\Models\ProductUnit;
 use App\Notifications\NewRequest;
 use App\Notifications\RequestApproved;
+use App\Notifications\RequestRejected;
+use App\Notifications\RequestCompleted;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Notifications\Actions\Action;
 use App\Filament\Personal\Resources\RequestResource;
-use App\Notifications\RequestCompleted;
-use App\Notifications\RequestRejected;
+use App\Notifications\RequestProducts;
 use Illuminate\Support\Facades\Notification as NotificationEmail;
+use Throwable;
+use Illuminate\Mail\SentMessage;
 
 trait RequestResourceTrait
 {
@@ -29,6 +34,10 @@ trait RequestResourceTrait
             if ($selectedProduct == ProductUnit::find($product['product_unit_id'])->product_id) {
                 $counter++;
             }
+        }
+
+        if (is_null($selectedProduct)) {
+            return;
         }
 
         $availableQuantity = self::calculateAvailableQuantity($selectedProduct);
@@ -56,6 +65,14 @@ trait RequestResourceTrait
 
         foreach ($selectedProducts as $selectedProduct) {
             array_push($selectedProductsID, $selectedProduct['product_unit_id']);
+        }
+
+        if ($get('general_product')) {
+            if (self::calculateAvailableQuantity($get('general_product')) == 0) {
+                return [
+                    '' => __('There are no available products')
+                ];
+            }
         }
 
         return ProductUnit::query()
@@ -105,8 +122,18 @@ trait RequestResourceTrait
     public static function formatRequestedArticles($record)
     {
         // Obtener los productos y la cantidad solicitada
+        // $articles = $record->requestProductUnits->map(function ($requestProductUnit) {
+        //     $productName = $requestProductUnit->productUnit->product()->withTrashed()->first()->nombre ?? 'Producto desconocido';
+        //     return $productName;
+        // });
+
         $articles = $record->requestProductUnits->map(function ($requestProductUnit) {
-            $productName = $requestProductUnit->productUnit->product->nombre ?? 'Producto desconocido';
+            //withTrashed() para incluir registros eliminados
+            $productUnit = $requestProductUnit->productUnit()->withTrashed()->first();
+
+            //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+            $productName = $productUnit ? $productUnit->product()->withTrashed()->first()->nombre ?? 'Producto desconocido' : 'Producto desconocido';
+
             return $productName;
         });
 
@@ -165,14 +192,14 @@ trait RequestResourceTrait
     {
         $recipient = User::where('id', $record->user_id)->get();
 
-        $state = match ($record->estado) {
-            'aceptado' => 'Accepted',
-            'rechazado' => 'Declined',
-            'completado' => 'Completed',
-        };
+        // $state = match ($record->estado) {
+        //     'aceptado' => 'Accepted',
+        //     'rechazado' => 'Declined',
+        //     'completado' => 'Completed',
+        // };
 
         Notification::make()
-            ->title(__("Your Request from " . $record->created_at->format('d/m/Y H:i') . " has been " . ucfirst($state)))
+            ->title(__("El estado de tu solicitud de la fecha " . $record->created_at->format('d/m/Y H:i') . " ha sido actualizado a " . ucfirst($record->estado)))
             ->icon('heroicon-o-clipboard-document')
             ->iconColor(match ($record->estado) {
                 'aceptado' => 'success',
@@ -182,9 +209,9 @@ trait RequestResourceTrait
             })
             ->actions([
                 Action::make('view')
-                    ->label('View Request')
+                    ->label('Ver Petición')
                     ->button()
-                    ->url(\App\Filament\AreaTI\Resources\RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal')),
+                    ->url(\App\Filament\AreaTI\Resources\RequestResource::getUrl('view', ['record' => $record->id], panel: 'personal')),
                 // ->openUrlInNewTab(),
             ])
             ->sendToDatabase($recipient);
@@ -231,7 +258,7 @@ trait RequestResourceTrait
             return $data;
         })->toArray();
 
-        $requestPath = RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal');
+        $requestPath = RequestResource::getUrl('view', ['record' => $record->id], panel: 'personal');
 
         $requestProductUnitsArray['request_path'] = $requestPath;
 
@@ -260,7 +287,7 @@ trait RequestResourceTrait
             return $data;
         })->toArray();
 
-        $requestPath = RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal');
+        $requestPath = RequestResource::getUrl('view', ['record' => $record->id], panel: 'personal');
 
         $requestProductUnitsArray['request_path'] = $requestPath;
         $requestProductUnitsArray['rejection_reason'] = $rejectionReason;
@@ -290,10 +317,88 @@ trait RequestResourceTrait
             return $data;
         })->toArray();
 
-        $requestPath = RequestResource::getUrl('edit', ['record' => $record->id], panel: 'personal');
+        $requestPath = RequestResource::getUrl('view', ['record' => $record->id], panel: 'personal');
 
         $requestProductUnitsArray['request_path'] = $requestPath;
 
         NotificationEmail::send($user, new RequestCompleted($requestProductUnitsArray));
+    }
+
+    public static function sendNotificationEmailRequestProducts($record)
+    {
+        $user = User::find($record->user_id);
+
+        $requestProductUnitsIds = $record->requestProductUnits;
+
+        $requestProductUnitsArray = [];
+
+        $requestProductUnitsArray['products'] = $requestProductUnitsIds->map(function ($productUnit) {
+            $pu = ProductUnit::find($productUnit->product_unit_id);
+
+            $data = [];
+
+            $data['unit_nombre'] = $pu->product->nombre;
+            $data['unit_marca'] = $pu->product->marca;
+            $data['unit_modelo'] = $pu->product->modelo;
+            $data['unit_codigo_inventario'] = $pu->codigo_inventario;
+            $data['unit_serie'] = $pu->serie;
+
+            return $data;
+        })->toArray();
+
+        $requestPath = RequestResource::getUrl('view', ['record' => $record->id], panel: 'personal');
+        $requestProductUnitsArray['request_path'] = $requestPath;
+
+        try {
+            NotificationEmail::send($user, new RequestProducts($requestProductUnitsArray));
+
+            Notification::make()
+                ->title('Correo de notificación enviado correctamente')
+                ->success()
+                ->send();
+        } catch (Throwable $e) {
+            // Error durante el envío
+            Notification::make()
+                ->title('Error al enviar el correo de notificación')
+                ->body('Error: ' . $e->getMessage()) // Mostramos el mensaje de error
+                ->danger()
+                ->send();
+        }
+    }
+
+    public static function isRequestWithinSchedule($record): bool
+    {
+        $now = Carbon::now();
+        $dayOfWeek = strtolower($now->englishDayOfWeek);
+
+        $setting = Setting::where('dia', $dayOfWeek)->first();
+
+        if (!$setting) {
+            return false; // Deshabilitar si no hay configuración para hoy
+        }
+
+        $requestOpeningTime = Carbon::parse($setting->hora_solicitudes_apertura);
+        $requestClosingTime = Carbon::parse($setting->hora_solicitudes_cierre);
+        $openingTime = Carbon::parse($setting->hora_apertura);
+        $breakStartTime = $setting->descanso_inicio ? Carbon::parse($setting->descanso_inicio) : null;
+        $breakEndTime = $setting->descanso_fin ? Carbon::parse($setting->descanso_fin) : null;
+
+        // Calcular la diferencia de tiempo en minutos
+        $timeDifference = $openingTime->diffInMinutes($requestOpeningTime);
+
+        if ($now->lessThan($requestOpeningTime) || $now->greaterThan($requestClosingTime)) {
+            return false; // Deshabilitar si está fuera del horario de solicitudes
+        }
+
+        if ($breakStartTime && $breakEndTime) {
+            // Ajustar el horario de descanso
+            $adjustedBreakStartTime = $breakStartTime->clone()->subMinutes($timeDifference);
+
+            if ($now->greaterThanOrEqualTo($adjustedBreakStartTime) && $now->lessThan($breakEndTime)) {
+                return false; // Deshabilitar si está en horario de descanso
+            }
+        }
+
+        return true; // Habilitar si está dentro del horario
     }
 }

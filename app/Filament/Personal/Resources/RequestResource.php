@@ -19,6 +19,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Personal\Resources\RequestResource\Pages;
@@ -45,7 +46,7 @@ class RequestResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('user_id', Auth::user()->id)->orderBy('created_at', 'desc');
+        return parent::getEloquentQuery()->where('user_id', Auth::user()->id);
     }
 
     public static function form(Form $form): Form
@@ -111,6 +112,7 @@ class RequestResource extends Resource
                         Forms\Components\Select::make('estado')
                             ->label(__('State'))
                             ->live()
+                            ->visible(fn($record) => $record !== null) // No visible si estamos en creacion
                             ->disabled(true) // Desactivado si estamos en creacion
                             ->dehydrated(true) // Esto evita que el campo se intente guardar en la base de datos
                             ->default('pendiente')
@@ -144,31 +146,44 @@ class RequestResource extends Resource
                                     ->disabled()
                                     ->label(__('Name'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->nombre ?? 0;
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->nombre ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_marca')
                                     ->disabled()
                                     ->label(__('Brand'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->marca ?? 0;
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->marca ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_modelo')
                                     ->disabled()
                                     ->label(__('Model'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->modelo ?? 0;
+
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->modelo ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_codigo_inventario')
                                     ->disabled()
                                     ->label(__('Stock Code'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->codigo_inventario ?? 0;
+                                        return $record->productUnit()->withTrashed()->first()->codigo_inventario ?? ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_serie')
                                     ->disabled()
                                     ->label(__('Series'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->serie ?? 0;
+                                        return $record->productUnit()->withTrashed()->first()->codigo_inventario ?? ' ';
                                     }),
 
                                 Hidden::make('product_unit_id')
@@ -211,7 +226,7 @@ class RequestResource extends Resource
             ->columns([
 
                 Tables\Columns\TextColumn::make('articulos_prestados')
-                    ->label('Artículos Prestados')
+                    ->label(__('Borrowed Items'))
                     ->getStateUsing(function ($record) {
 
                         return RequestResourceTrait::formatRequestedArticles($record);
@@ -221,17 +236,22 @@ class RequestResource extends Resource
                     ->color('primary'),
 
                 Tables\Columns\TextColumn::make('cantidad_solicitada')
+                    ->label(__('Requested Quantity'))
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('estado')
+                    ->label(__('State'))
                     ->badge()
                     ->color(fn(string $state): string => RequestResourceTrait::getStateColor($state))
-                    ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state)),
+                    ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state))
+                    ->formatStateUsing(fn(string $state): string => ucfirst(__($state))), // Traduce el estado,
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('Created At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('Updated At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -247,22 +267,25 @@ class RequestResource extends Resource
                     ])
             ])
             ->actions([
-                // Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
-                    ->visible(function ($record) {
-                        return ($record->estado == 'pendiente');
-                    })
-                    ->disabled(function ($record) {
-                        return !($record->estado == 'pendiente');
-                    })
-                    ->before(fn($record) => RequestResourceTrait::beforeDelete($record))
-                    ->after(fn($record) => RequestResourceTrait::afterDelete($record)),
+                ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\DeleteAction::make()
+                        ->visible(function ($record) {
+                            return ($record->estado == 'pendiente');
+                        })
+                        ->disabled(function ($record) {
+                            return !($record->estado == 'pendiente');
+                        })
+                        ->before(fn($record) => RequestResourceTrait::beforeDelete($record))
+                        ->after(fn($record) => RequestResourceTrait::afterDelete($record)),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     // Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array
@@ -278,6 +301,7 @@ class RequestResource extends Resource
             'index' => Pages\ListRequests::route('/'),
             'create' => Pages\CreateRequest::route('/create'),
             'edit' => Pages\EditRequest::route('/{record}/edit'),
+            'view' => Pages\ViewRequest::route('/{record}'),
         ];
     }
 }

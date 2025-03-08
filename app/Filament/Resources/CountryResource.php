@@ -3,23 +3,23 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CountryResource\Pages;
-use App\Filament\Resources\CountryResource\RelationManagers;
 use App\Models\Country;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CountryResource extends Resource
 {
     protected static ?string $model = Country::class;
-    protected static ?string $navigationGroup = 'Gestión del sistema';
     protected static ?string $navigationIcon = 'heroicon-o-flag';
     protected static ?int $navigationSort = 2;
-    // protected static ?string $navigationLabel = 'Paises';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('System Management');
+    }
 
     // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
     public static function getModelLabel(): string

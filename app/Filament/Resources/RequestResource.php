@@ -16,8 +16,8 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Filters\SelectFilter;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\RequestResource\Pages;
 
 class RequestResource extends Resource
@@ -26,7 +26,6 @@ class RequestResource extends Resource
 
     protected static ?string $model = Request::class;
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document';
-    // protected static ?string $navigationLabel = 'Peticiones';
 
     // Con este metodo se sobreescribe el label que usa Filament para establecer nombres del recurso a traves de toda la UI
     public static function getModelLabel(): string
@@ -38,11 +37,6 @@ class RequestResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('Requests');
-    }
-
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->orderBy('created_at', 'desc');
     }
 
     public static function getNavigationBadgeColor(): ?string
@@ -156,31 +150,44 @@ class RequestResource extends Resource
                                     ->disabled()
                                     ->label(__('Name'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->nombre ?? 0;
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->nombre ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_marca')
                                     ->disabled()
                                     ->label(__('Brand'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->marca ?? 0;
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->marca ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_modelo')
                                     ->disabled()
                                     ->label(__('Model'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->modelo ?? 0;
+
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->modelo ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_codigo_inventario')
                                     ->disabled()
                                     ->label(__('Stock Code'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->codigo_inventario ?? 0;
+                                        return $record->productUnit()->withTrashed()->first()->codigo_inventario ?? ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_serie')
                                     ->disabled()
                                     ->label(__('Series'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->serie ?? 0;
+                                        return $record->productUnit()->withTrashed()->first()->codigo_inventario ?? ' ';
                                     }),
 
                                 Hidden::make('product_unit_id')
@@ -222,6 +229,7 @@ class RequestResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
+                    ->label(__('User'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('articulos_prestados')
@@ -242,7 +250,8 @@ class RequestResource extends Resource
                     ->label(__('State'))
                     ->badge()
                     ->color(fn(string $state): string => RequestResourceTrait::getStateColor($state))
-                    ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state)),
+                    ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state))
+                    ->formatStateUsing(fn(string $state): string => ucfirst(__($state))), // Traduce el estado,
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created At'))
                     ->dateTime()
@@ -264,16 +273,22 @@ class RequestResource extends Resource
                     ])
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
-                    ->before(fn($record) => RequestResourceTrait::beforeDelete($record))
-                    ->after(fn($record) => RequestResourceTrait::afterDelete($record)),
+                Tables\Actions\ViewAction::make(),
+                ActionGroup::make([
+                    // Array of actions
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make()
+                        ->before(fn($record) => RequestResourceTrait::beforeDelete($record))
+                        ->after(fn($record) => RequestResourceTrait::afterDelete($record)),
+                ]),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array
@@ -289,6 +304,7 @@ class RequestResource extends Resource
             'index' => Pages\ListRequests::route('/'),
             'create' => Pages\CreateRequest::route('/create'),
             'edit' => Pages\EditRequest::route('/{record}/edit'),
+            'view' => Pages\ViewRequest::route('/{record}'),
         ];
     }
 }

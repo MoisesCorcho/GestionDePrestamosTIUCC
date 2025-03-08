@@ -20,6 +20,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -44,11 +45,6 @@ class RequestResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('Requests');
-    }
-
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->orderBy('created_at', 'desc');
     }
 
     public static function getNavigationBadgeColor(): ?string
@@ -164,31 +160,44 @@ class RequestResource extends Resource
                                     ->disabled()
                                     ->label(__('Name'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->nombre ?? 0;
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->nombre ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_marca')
                                     ->disabled()
                                     ->label(__('Brand'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->marca ?? 0;
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->marca ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_modelo')
                                     ->disabled()
                                     ->label(__('Model'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->product->modelo ?? 0;
+
+                                        //withTrashed() para incluir registros eliminados
+                                        $productUnit = $record->productUnit()->withTrashed()->first();
+
+                                        //Verificar si $productUnit es nulo antes de acceder a sus propiedades
+                                        return $productUnit ? $productUnit->product()->withTrashed()->first()->modelo ?? ' ' : ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_codigo_inventario')
                                     ->disabled()
                                     ->label(__('Stock Code'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->codigo_inventario ?? 0;
+                                        return $record->productUnit()->withTrashed()->first()->codigo_inventario ?? ' ';
                                     }),
                                 Forms\Components\TextInput::make('unit_serie')
                                     ->disabled()
                                     ->label(__('Series'))
                                     ->formatStateUsing(function ($state, $record) {
-                                        return $record->productUnit->serie ?? 0;
+                                        return $record->productUnit()->withTrashed()->first()->codigo_inventario ?? ' ';
                                     }),
 
                                 Hidden::make('product_unit_id')
@@ -240,7 +249,7 @@ class RequestResource extends Resource
                     ->label(__('Department'))
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('articulos_prestados')
-                    ->label('Artículos Prestados')
+                    ->label(__('Borrowed Items'))
                     ->getStateUsing(function ($record) {
 
                         return RequestResourceTrait::formatRequestedArticles($record);
@@ -250,17 +259,22 @@ class RequestResource extends Resource
                     ->color('primary'),
 
                 Tables\Columns\TextColumn::make('cantidad_solicitada')
+                    ->label(__('Requested Quantity'))
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('estado')
+                    ->label(__('State'))
                     ->badge()
                     ->color(fn(string $state): string => RequestResourceTrait::getStateColor($state))
-                    ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state)),
+                    ->icon(fn(string $state): string => RequestResourceTrait::getStateIcon($state))
+                    ->formatStateUsing(fn(string $state): string => ucfirst(__($state))), // Traduce el estado,
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('Created At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('Updated At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -281,6 +295,9 @@ class RequestResource extends Resource
                     ->disabled(function ($record) {
                         // El boton de aceptar solo estará activo para request en estado pendiente
                         return !($record->estado == 'pendiente');
+
+                        // Validar horarios de atención y descanso
+                        return !RequestResourceTrait::isRequestWithinSchedule($record);
                     })
                     ->visible(function ($record) {
                         // El boton de aceptar solo estará visible para request en estado pendiente
@@ -396,13 +413,26 @@ class RequestResource extends Resource
                     ->modalCancelAction(fn(StaticAction $action) => $action->label('Cerrar'))
                     ->slideOver()
                     ->color('info'),
+
+                ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\Action::make('Enviar Email')
+                        ->label('Enviar Email')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->visible(fn($record) => $record->estado === 'aceptado')
+                        ->action(function ($record) {
+                            RequestResourceTrait::sendNotificationEmailRequestProducts($record);
+                        })
+                ])
             ])
+            // ->recordUrl(fn($record) => null) // Desactiva el clic en la fila
 
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     // Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array
@@ -418,6 +448,7 @@ class RequestResource extends Resource
             'index' => Pages\ListRequests::route('/'),
             'create' => Pages\CreateRequest::route('/create'),
             'edit' => Pages\EditRequest::route('/{record}/edit'),
+            'view' => Pages\ViewRequest::route('/{record}'),
         ];
     }
 }

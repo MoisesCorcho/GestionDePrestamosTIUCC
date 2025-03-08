@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\RequestResource\Pages;
 
+use App\Models\User;
 use Filament\Actions;
 use App\Models\Request;
 use App\Models\ProductUnit;
 use App\Models\RequestProductUnit;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use App\Filament\Resources\RequestResource;
 
@@ -24,6 +26,7 @@ class EditRequest extends EditRecord
 
     protected function afterSave()
     {
+
         if ($this->record->estado !== 'rechazado') {
             $this->record->motivo_rechazo = null;
             $this->record->save();
@@ -52,5 +55,12 @@ class EditRequest extends EditRecord
                 $requestProductUnit->productUnit->save();
             });
         }
+
+        $recipient = User::where('id', $this->record->user_id)->first();
+
+        Notification::make()
+            ->title(__("El estado de su solicitud de la fecha " . $this->record->created_at->format('d/m/Y H:i') . " ha sido actualizado a " . ucfirst($this->record->estado)) . " por el administrador")
+            ->icon('heroicon-o-clipboard-document')
+            ->sendToDatabase($recipient);
     }
 }

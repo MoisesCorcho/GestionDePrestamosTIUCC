@@ -27,6 +27,8 @@ class AreaTIPanelProvider extends PanelProvider
             ->id('areaTI')
             ->path('areaTI')
             ->login()
+            ->profile()
+            ->passwordReset()
             ->colors([
                 'primary' => Color::Blue,
             ])
@@ -43,8 +45,8 @@ class AreaTIPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/AreaTI/Widgets'), for: 'App\\Filament\\AreaTI\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // Widgets\AccountWidget::class,
+                // Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
