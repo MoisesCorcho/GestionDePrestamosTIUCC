@@ -16,7 +16,10 @@ use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Notifications\Actions\Action;
 use App\Filament\Personal\Resources\RequestResource;
+use App\Notifications\RequestProducts;
 use Illuminate\Support\Facades\Notification as NotificationEmail;
+use Throwable;
+use Illuminate\Mail\SentMessage;
 
 trait RequestResourceTrait
 {
@@ -319,6 +322,48 @@ trait RequestResourceTrait
         $requestProductUnitsArray['request_path'] = $requestPath;
 
         NotificationEmail::send($user, new RequestCompleted($requestProductUnitsArray));
+    }
+
+    public static function sendNotificationEmailRequestProducts($record)
+    {
+        $user = User::find($record->user_id);
+
+        $requestProductUnitsIds = $record->requestProductUnits;
+
+        $requestProductUnitsArray = [];
+
+        $requestProductUnitsArray['products'] = $requestProductUnitsIds->map(function ($productUnit) {
+            $pu = ProductUnit::find($productUnit->product_unit_id);
+
+            $data = [];
+
+            $data['unit_nombre'] = $pu->product->nombre;
+            $data['unit_marca'] = $pu->product->marca;
+            $data['unit_modelo'] = $pu->product->modelo;
+            $data['unit_codigo_inventario'] = $pu->codigo_inventario;
+            $data['unit_serie'] = $pu->serie;
+
+            return $data;
+        })->toArray();
+
+        $requestPath = RequestResource::getUrl('view', ['record' => $record->id], panel: 'personal');
+        $requestProductUnitsArray['request_path'] = $requestPath;
+
+        try {
+            NotificationEmail::send($user, new RequestProducts($requestProductUnitsArray));
+
+            Notification::make()
+                ->title('Correo de notificación enviado correctamente')
+                ->success()
+                ->send();
+        } catch (Throwable $e) {
+            // Error durante el envío
+            Notification::make()
+                ->title('Error al enviar el correo de notificación')
+                ->body('Error: ' . $e->getMessage()) // Mostramos el mensaje de error
+                ->danger()
+                ->send();
+        }
     }
 
     public static function isRequestWithinSchedule($record): bool

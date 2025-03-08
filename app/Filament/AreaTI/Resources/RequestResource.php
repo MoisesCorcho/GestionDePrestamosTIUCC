@@ -416,6 +416,13 @@ class RequestResource extends Resource
 
                 ActionGroup::make([
                     Tables\Actions\ViewAction::make(),
+                    Tables\Actions\Action::make('Enviar Email')
+                        ->label('Enviar Email')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->visible(fn($record) => $record->estado === 'aceptado')
+                        ->action(function ($record) {
+                            RequestResourceTrait::sendNotificationEmailRequestProducts($record);
+                        })
                 ])
             ])
             // ->recordUrl(fn($record) => null) // Desactiva el clic en la fila
