@@ -83,7 +83,8 @@ class UserResource extends Resource
                             ->relationship('roles', 'name')
                             ->multiple()
                             ->preload()
-                            ->searchable(),
+                            ->searchable()
+                            ->required(),
                     ])
                     ->columns(2),
 
@@ -138,10 +139,13 @@ class UserResource extends Resource
                             ]),
 
                         Forms\Components\TextInput::make('postal_code')
+                            ->numeric()
                             ->label('Codigo Postal')
-                            ->rules(['numeric'])
+                            ->rules(['numeric', 'min:6', 'max:6'])
                             ->validationMessages([
                                 'numeric' => 'El campo :attribute solo puede contener números.',
+                                'min' => 'El campo :attribute debe tener al menos 6 caracteres.',
+                                'max' => 'El campo :attribute debe tener al menos 6 caracteres.',
                             ]),
 
 

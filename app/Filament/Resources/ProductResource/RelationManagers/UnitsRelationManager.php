@@ -7,8 +7,10 @@ use Filament\Tables;
 use Filament\Forms\Get;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Illuminate\Validation\Rule;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
+use Doctrine\Inflector\Rules\English\Rules;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Resources\RelationManagers\RelationManager;
 
@@ -30,12 +32,28 @@ class UnitsRelationManager extends RelationManager
                 Forms\Components\TextInput::make('codigo_inventario')
                     ->label('Código de Inventario')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->rules(function ($record) {
+                        return [
+                            'required',
+                            'max:255',
+                            Rule::unique('product_units', 'codigo_inventario')
+                                ->ignore($record),
+                        ];
+                    }),
 
                 Forms\Components\TextInput::make('serie')
                     ->label('Número de Serie')
                     ->nullable()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->rules(function ($record) {
+                        return [
+                            'nullable',
+                            'max:255',
+                            Rule::unique('product_units', 'serie')
+                                ->ignore($record),
+                        ];
+                    }),
 
                 Forms\Components\Select::make('estado')
                     ->label('Estado')
@@ -55,18 +73,21 @@ class UnitsRelationManager extends RelationManager
                 Forms\Components\TextInput::make('descripcion_lugar')
                     ->label('Descripción del Lugar')
                     ->nullable()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->rules(['nullable', 'min:5', 'max:255']),
 
                 Forms\Components\TextInput::make('funcionario_responsable')
                     ->label('Funcionario Responsable')
                     ->nullable()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->rules(['min:5', 'max:255']),
 
                 Forms\Components\DatePicker::make('fecha_asignacion')
                     ->label('Fecha de Asignación')
                     ->nullable()
                     ->displayFormat('Y-m-d')
-                    ->weekStartsOnMonday(),
+                    ->weekStartsOnMonday()
+                    ->rules(['nullable', 'date', 'before_or_equal:today', 'after_or_equal:01-01-1900']),
             ]);
     }
 
