@@ -2,8 +2,9 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\ServiceProvider;
 use BezhanSalleh\PanelSwitch\PanelSwitch;
 use BezhanSalleh\FilamentLanguageSwitch\LanguageSwitch;
 
@@ -70,6 +71,11 @@ class AppServiceProvider extends ServiceProvider
                     'areaTI' => 'TI Area Panel',
                     'personal' => 'User Panel',
                 ]);
+        });
+
+        // Set default table pagination
+        Table::configureUsing(function (Table $table) {
+            $table->paginated([10, 25, 50]);
         });
     }
 }

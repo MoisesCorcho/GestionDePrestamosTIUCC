@@ -121,12 +121,19 @@ class RequestResource extends Resource
                             ->disabled(fn($record) => $record === null) // Desactivado si estamos en creacion
                             ->dehydrated(true) // Esto evita que el campo se intente guardar en la base de datos
                             ->default('pendiente')
-                            ->options([
-                                'pendiente' => __('Pending'),
-                                'aceptado' => __('Accepted'),
-                                'rechazado' => __('Rejected'),
-                                'completado' => __('Completed'),
-                            ])
+                            ->options(function (Get $get, $record) {
+                                $options = [
+                                    'pendiente' => __('Pending'),
+                                    'aceptado' => __('Accepted'),
+                                    'rechazado' => __('Rejected'),
+                                ];
+
+                                if (in_array($record->estado, ['aceptado', 'completado'])) {
+                                    $options['completado'] = __('Completed');
+                                }
+
+                                return $options;
+                            })
                             ->required(),
 
                         Section::make('Razones de Rechazo')
