@@ -121,12 +121,23 @@ class RequestResource extends Resource
                             ->disabled(fn($record) => $record === null) // Desactivado si estamos en creacion
                             ->dehydrated(true) // Esto evita que el campo se intente guardar en la base de datos
                             ->default('pendiente')
-                            ->options([
-                                'pendiente' => __('Pending'),
-                                'aceptado' => __('Accepted'),
-                                'rechazado' => __('Rejected'),
-                                'completado' => __('Completed'),
-                            ])
+                            ->options(function (Get $get, ?Request $record) {
+                                $options = [
+                                    'pendiente' => __('Pending'),
+                                    'aceptado' => __('Accepted'),
+                                    'rechazado' => __('Rejected'),
+                                ];
+
+                                if ($record !== null && !empty($record->estado)) {
+                                    if (in_array($record->estado, ['aceptado', 'completado'])) {
+                                        $options['completado'] = __('Completed');
+                                    }
+                                } else {
+                                    $options['completado'] = __('Completed');
+                                }
+
+                                return $options;
+                            })
                             ->required(),
 
                         Section::make('Razones de Rechazo')
@@ -231,7 +242,10 @@ class RequestResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->label(__('User'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->getStateUsing(function ($record) {
+                        return optional($record->user()->withTrashed()->first())->name;
+                    }),
                 Tables\Columns\TextColumn::make('articulos_prestados')
                     ->label(__('Borrowed Items'))
                     ->getStateUsing(function ($record) {

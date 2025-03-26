@@ -14,7 +14,9 @@ use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use Illuminate\Support\Collection;
 use Filament\Forms\Components\Section;
+use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\UserResource\Pages;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class UserResource extends Resource
 {
@@ -37,6 +39,13 @@ class UserResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('Users');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
     }
 
     public static function form(Form $form): Form
@@ -83,7 +92,8 @@ class UserResource extends Resource
                             ->relationship('roles', 'name')
                             ->multiple()
                             ->preload()
-                            ->searchable(),
+                            ->searchable()
+                            ->required(),
                     ])
                     ->columns(2),
 
@@ -138,10 +148,13 @@ class UserResource extends Resource
                             ]),
 
                         Forms\Components\TextInput::make('postal_code')
+                            ->numeric()
                             ->label('Codigo Postal')
-                            ->rules(['numeric'])
+                            ->rules(['numeric', 'min:6', 'max:6'])
                             ->validationMessages([
                                 'numeric' => 'El campo :attribute solo puede contener números.',
+                                'min' => 'El campo :attribute debe tener al menos 6 caracteres.',
+                                'max' => 'El campo :attribute debe tener al menos 6 caracteres.',
                             ]),
 
 
@@ -179,14 +192,14 @@ class UserResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

@@ -16,22 +16,25 @@ class EditUser extends EditRecord
         return [
             Actions\DeleteAction::make()
                 ->before(function ($record) {
+                    if (method_exists($record, 'pendingOrAcceptedRequests')) {
+                        $pendingRequests = $record->pendingOrAcceptedRequests;
 
-                    if ($record->requests->isNotEmpty()) {
+                        if ($pendingRequests && $pendingRequests->isNotEmpty()) {
+                            Notification::make()
+                                ->title('Error')
+                                ->body('No se puede eliminar este elemento porque tiene peticiones pendientes o aceptadas asociadas.')
+                                ->danger()
+                                ->send();
 
-                        // Unidades reservadas encontradas, impedir la eliminación y mostrar un error.
-                        Notification::make()
-                            ->title('Error')
-                            ->body('No se puede eliminar este elemento porque tiene peticiones asociadas.')
-                            ->danger()
-                            ->send();
-
-
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            'error' => 'No se puede eliminar este elemento porque tiene peticiones asociadas.',
-                        ]);
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                'error' => 'No se puede eliminar este elemento porque tiene peticiones pendientes o aceptadas asociadas.',
+                            ]);
+                        }
+                    } else {
+                        throw new \Exception('El recurso no tiene la propiedad "pendingOrAcceptedRequests"');
                     }
                 }),
+            Actions\RestoreAction::make(),
         ];
     }
 }
